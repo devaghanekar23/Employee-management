@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard | Employee Data Manager</title>
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
+  --primary:#1f5fd6; --primary-soft:#e8f0fe; --accent:#f58a5b; --accent-soft:#fff1ea;
+  --green:#16a34a; --green-soft:#e7f7ed; --red:#dc2626; --red-soft:#fde8e8;
+  --amber:#d97706; --amber-soft:#fef3c7;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --soft:#1c2330; --text:#e6edf3; --muted:#8b98a9; --line:#262e3b;
+  --primary:#4c8dff; --primary-soft:#172640; --accent:#ff9d73; --accent-soft:#3a2418;
+  --green:#3fb950; --green-soft:#12301c; --red:#f85149; --red-soft:#3b1618;
+  --amber:#f59e0b; --amber-soft:#362810;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow:hidden}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+.app{display:grid;grid-template-columns:72px 380px 1fr;height:100vh}
+
+/* Sidebar */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:10px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:14px}
+.nav{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);border:none;background:none;position:relative;transition:.15s}
+.nav:hover{background:var(--soft);color:var(--text)}
+.nav.active{background:var(--primary-soft);color:var(--primary)}
+.nav svg{width:22px;height:22px}
+.nav[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:54px;background:#111827;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:20}
+.spacer{flex:1}
+
+/* List panel */
+.list-panel{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.lp-top{padding:22px 22px 12px}
+.crumb{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+.crumb b{color:var(--text);font-weight:500}
+.lp-title{display:flex;align-items:center;justify-content:space-between}
+.lp-title h1{font-size:22px;font-weight:600;display:flex;align-items:center;gap:10px}
+.pill{background:var(--accent);color:#fff;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 15px;border-radius:10px;font-size:13.5px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--red);border-color:var(--red-soft);background:var(--red-soft)}
+.btn.danger:hover{filter:brightness(.97)}
+.btn.outline-accent{border-color:var(--accent);color:var(--accent);background:var(--panel)}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+
+.search{position:relative;margin-top:16px}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.search input{padding-left:38px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:14px;font-family:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.filters{display:flex;gap:8px;margin-top:10px}
+.selrow{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--muted);font-size:12.5px;flex-wrap:wrap}
+.selrow .grow{flex:1}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--primary);padding:0;cursor:pointer}
+.list{flex:1;overflow-y:auto;padding:10px 12px 20px}
+.item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;cursor:pointer;transition:.15s;position:relative;margin-bottom:4px}
+.item:hover{background:var(--soft)}
+.item.active{background:var(--primary-soft)}
+.item .meta{flex:1;min-width:0}
+.item .nm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .ds{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .go{opacity:0;width:26px;height:26px;border-radius:50%;background:var(--panel);display:grid;place-items:center;border:1px solid var(--line);transition:.15s;color:var(--text)}
+.item:hover .go,.item.active .go{opacity:1}
+
+/* Avatar with Image or Initial fallback */
+.avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;font-size:16px;flex-shrink:0;letter-spacing:.5px;overflow:hidden;position:relative}
+.avatar.lg{width:64px;height:64px;font-size:22px}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-cam{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;place-items:center;color:#fff;font-size:16px;cursor:pointer}
+.avatar.lg:hover .avatar-cam{display:grid}
+
+.empty{text-align:center;color:var(--muted);padding:50px 20px}
+
+/* Detail panel */
+.detail{overflow-y:auto;background:var(--panel);min-height:0}
+.dhead{display:flex;align-items:center;gap:16px;padding:20px 28px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:5}
+.dhead .who{flex:1;min-width:0}
+.dhead h2{font-size:20px;font-weight:600;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dhead .role{color:var(--muted);font-size:13.5px;margin-top:2px}
+.tag{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--primary-soft);color:var(--primary)}
+.tag.green{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--amber-soft);color:var(--amber)}
+.tag.bad{background:var(--red-soft);color:var(--red)}
+.back{display:none;border:none;background:var(--soft);width:36px;height:36px;border-radius:50%;color:var(--text)}
+.kebab{position:relative}
+.kebab>button{width:36px;height:36px;border-radius:50%;border:none;background:none;color:var(--muted);font-size:20px;line-height:1}
+.kebab>button:hover{background:var(--soft)}
+.menu{position:absolute;right:0;top:42px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:170px;padding:6px;display:none;z-index:30}
+.menu.open{display:block}
+.menu button{width:100%;text-align:left;border:none;background:none;padding:9px 12px;border-radius:8px;font-size:13.5px;color:var(--text)}
+.menu button:hover{background:var(--soft)}
+.menu button.red{color:var(--red)}
+
+.dbody{padding:24px 28px 40px;display:flex;flex-direction:column;gap:22px;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-title h3{font-size:15.5px;font-weight:600}
+.sec-title small{color:var(--muted);font-size:12.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.stat{border:1px solid var(--line);border-radius:14px;padding:16px 18px;transition:.2s;background:var(--panel)}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat .l{color:var(--muted);font-size:12.5px}
+.stat .v{font-size:22px;font-weight:700;color:var(--primary);margin-top:6px}
+.stat .v small{font-size:12px;color:var(--muted);font-weight:500;margin-left:3px}
+.stat .v.good{color:var(--green)} .stat .v.bad{color:var(--red)} .stat .v.warn{color:var(--amber)}
+.box{border:1px solid var(--line);border-radius:14px;padding:20px 22px;background:var(--panel)}
+.box-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+.box-head h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px}
+.empcode{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+.empcode b{color:var(--accent);font-weight:600;letter-spacing:.5px}
+.copy{border:none;background:none;color:var(--muted);padding:3px;border-radius:6px}
+.copy:hover{background:var(--soft);color:var(--text)}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px 24px}
+.info .k{color:var(--muted);font-size:12.5px;margin-bottom:3px}
+.info .val{font-weight:500;word-break:break-word}
+.quick{display:flex;gap:10px;flex-wrap:wrap}
+.tl{display:flex;flex-direction:column}
+.tl-item{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:flex-start}
+.tl-item:first-child{border-top:none;padding-top:0}
+.tl-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;font-size:16px}
+.tl-ic.a{background:var(--red-soft)} .tl-ic.b{background:var(--accent-soft)} .tl-ic.c{background:var(--primary-soft)} .tl-ic.d{background:var(--green-soft)}
+.tl-main{flex:1}
+.tl-main .t{font-weight:600}
+.tl-main .t span{color:var(--muted);font-weight:400;font-size:12.5px;margin-left:8px}
+.tl-main .s{color:var(--muted);font-size:13px;margin-top:2px}
+.bars{display:flex;flex-direction:column;gap:12px}
+.bar-row{display:grid;grid-template-columns:100px 1fr 34px;align-items:center;gap:12px;font-size:13px}
+.bar-track{height:9px;background:var(--soft);border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),#6ea8ff);transition:width .6s}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.mini{display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:12px;cursor:pointer}
+.mini:hover{background:var(--soft)}
+.mini .avatar{width:38px;height:38px;font-size:14px}
+.mini .n{font-weight:600;font-size:13.5px}
+.mini .d{color:var(--muted);font-size:12px}
+
+/* Progress bar */
+.progress-wrap{background:var(--soft);border-radius:99px;height:8px;overflow:hidden;width:100%;margin-top:6px}
+.progress-bar{height:100%;border-radius:99px;background:var(--green);transition:width .5s}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(10,15,25,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:100;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:var(--panel);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:18px;box-shadow:0 25px 60px rgba(0,0,0,.35);animation:pop .2s}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.m-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--line)}
+.m-head h3{font-size:18px}
+.x{border:none;background:var(--soft);width:34px;height:34px;border-radius:50%;font-size:18px;color:var(--text)}
+.m-body{padding:22px 24px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.field label{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;color:var(--muted)}
+.field .err{color:var(--red);font-size:12px;margin-top:3px}
+.field.full{grid-column:1/-1}
+.m-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 24px;border-top:1px solid var(--line)}
+.formalert{background:var(--red-soft);color:var(--red);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none}
+.formalert.show{display:block}
+
+/* Confirm modal */
+#cOverlay{z-index:150}
+.confirm{max-width:400px;text-align:center;padding:30px 28px 24px}
+.c-icon{width:64px;height:64px;border-radius:50%;background:var(--red-soft);color:var(--red);display:grid;place-items:center;margin:0 auto 16px;font-size:30px}
+.confirm h3{font-size:20px;margin-bottom:8px}
+.confirm p{color:var(--muted);font-size:14px;line-height:1.55;margin-bottom:24px}
+.confirm p b{color:var(--text)}
+.c-actions{display:flex;gap:12px}
+.c-actions .btn{flex:1;justify-content:center;padding:11px 16px;font-size:14px}
+.btn.solid-red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.solid-red:hover{filter:brightness(1.08);background:var(--red)}
+
+#toast{position:fixed;right:22px;bottom:22px;padding:12px 18px;border-radius:12px;color:#fff;font-size:13.5px;opacity:0;transform:translateY(10px);transition:.25s;z-index:200;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+#toast.ok{background:#16a34a} #toast.bad{background:#dc2626}
+.skeleton{height:62px;border-radius:14px;margin:6px 0;background:linear-gradient(90deg,var(--soft) 25%,var(--line) 50%,var(--soft) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+kbd{background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:0 6px;font-size:11px;color:var(--muted)}
+
+@media(max-width:1100px){.app{grid-template-columns:64px 340px 1fr}.two{grid-template-columns:1fr}}
+@media(max-width:860px){
+  body{overflow:auto}
+  .app{display:block;height:auto}
+  .side{flex-direction:row;height:58px;padding:0 14px;justify-content:flex-start;position:sticky;top:0;z-index:40;border-right:none;border-bottom:1px solid var(--line)}
+  .logo{margin:0 8px 0 0;width:36px;height:36px}
+  .spacer{flex:1}
+  .nav[data-tip]:hover::after{display:none}
+  .list-panel{height:calc(100vh - 58px);border-right:none}
+  .detail{position:fixed;inset:58px 0 0 0;z-index:30;transform:translateX(100%);transition:.25s}
+  .app.show-detail .detail{transform:none}
+  .back{display:grid;place-items:center}
+  .grid{grid-template-columns:1fr}
+  .dbody{padding:18px}.dhead{padding:14px 16px}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="logo">E</div>
+    <a class="nav active" data-tip="Dashboard" href="/dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    </a>
+    <a class="nav" data-tip="Attendance" href="/attendance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+    </a>
+    <a class="nav" data-tip="Leaves" href="/leaves">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><circle cx="12" cy="16" r="2"/></svg>
+    </a>
+    <a class="nav" data-tip="Employee Report" href="/report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+    </a>
+    <div class="spacer"></div>
+    <button class="nav" id="themeBtn" data-tip="Dark / Light mode" title="Toggle theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </aside>
+
+  <section class="list-panel">
+    <div class="lp-top">
+      <div class="crumb">Company &nbsp;›&nbsp; <b>Employees</b></div>
+      <div class="lp-title">
+        <h1>Employees <span class="pill" id="newPill" style="display:none"></span></h1>
+        <button class="btn primary" id="addBtn">+ Add</button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" placeholder="Search name, ID, email...  ( / )" autocomplete="off" />
+      </div>
+      <div class="filters">
+        <select id="deptFilter">
+          <option value="">All Departments</option>
+          <option>IT</option><option>HR</option><option>Finance</option><option>Sales</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <select id="sortBy">
+          <option value="new">Newest first</option>
+          <option value="name">Name A-Z</option>
+          <option value="salary">Salary high-low</option>
+          <option value="joined">Oldest joiner</option>
+        </select>
+      </div>
+    </div>
+    <div class="selrow">
+      <input type="checkbox" id="selAll" title="Select all" />
+      <span class="grow" id="selInfo">Select All</span>
+      <button class="btn sm danger" id="bulkDel" style="display:none">Delete</button>
+      <button class="btn sm" id="excelBtn" title="Download Excel (.xlsx)">Excel</button>
+      <button class="btn sm" id="pdfBtn" title="Download PDF (.pdf)">PDF</button>
+      <button class="btn sm" id="csvBtn" title="Download CSV">CSV</button>
+    </div>
+    <div class="list" id="list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  </section>
+
+  <section class="detail" id="detail"></section>
+</div>
+
+<!-- Add / Edit Employee Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="m-head"><h3 id="mTitle">Add Employee</h3><button class="x" id="mClose" aria-label="Close">×</button></div>
+    <form id="form" novalidate>
+      <div class="m-body">
+        <div class="formalert" id="formAlert"></div>
+
+        <!-- Profile Photo Upload Field -->
+        <div class="field full" style="margin-bottom:18px">
+          <label>Profile Photo (Click to upload)</label>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div id="f_avatar_box" class="avatar lg" style="cursor:pointer;background:var(--soft);border:2px dashed var(--line)" title="Click to choose photo">
+              <span id="f_avatar_ph" style="font-size:24px">📷</span>
+              <img id="f_avatar_preview" style="display:none;width:100%;height:100%;object-fit:cover" />
+            </div>
+            <div>
+              <input type="file" id="f_avatar_file" accept="image/*" style="display:none" />
+              <div style="display:flex;gap:8px">
+                <button type="button" class="btn sm" id="f_avatar_btn">Choose Photo</button>
+                <button type="button" class="btn sm danger" id="f_avatar_remove" style="display:none">Remove Photo</button>
+              </div>
+              <div style="color:var(--muted);font-size:12px;margin-top:4px">Upload JPG, PNG, or WebP. Max 5MB.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field"><label>Employee ID</label><input id="f_emp_code" placeholder="EMP101" /><div class="err" data-e="emp_code"></div></div>
+          <div class="field"><label>Full Name</label><input id="f_full_name" placeholder="Saloni Aagre" /><div class="err" data-e="full_name"></div></div>
+          <div class="field"><label>Email</label><input id="f_email" type="email" placeholder="xyz@company.com" /><div class="err" data-e="email"></div></div>
+          <div class="field"><label>Phone</label><input id="f_phone" maxlength="10" inputmode="numeric" placeholder="9876543210" /><div class="err" data-e="phone"></div></div>
+          <div class="field"><label>Department</label>
+            <select id="f_department"><option value="">-- Select --</option><option>IT</option><option>HR</option><option>Finance</option><option>Sales</option><option>Marketing</option><option>Operations</option></select>
+            <div class="err" data-e="department"></div></div>
+          <div class="field"><label>Designation</label><input id="f_designation" placeholder="Software Engineer" /><div class="err" data-e="designation"></div></div>
+          <div class="field"><label>Salary (₹ / month)</label><input id="f_salary" type="number" min="1" placeholder="45000" /><div class="err" data-e="salary"></div></div>
+          <div class="field"><label>Joining Date</label><input id="f_joining_date" type="date" /><div class="err" data-e="joining_date"></div></div>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn" id="mCancel">Cancel</button>
+        <button type="submit" class="btn primary" id="mSave">Save Employee</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Direct Photo Upload Input -->
+<input type="file" id="directAvatarInput" accept="image/*" style="display:none" />
+
+<!-- Quick Apply Leave Modal -->
+<div class="overlay" id="quickLeaveOverlay">
+  <div class="modal" style="max-width:500px">
+    <div class="m-head">
+      <h3 id="quickLeaveTitle">Apply Leave</h3>
+      <button class="x" onclick="$('#quickLeaveOverlay').classList.remove('open')">×</button>
+    </div>
+    <form id="quickLeaveForm">
+      <div class="m-body">
+        <input type="hidden" id="ql_employee_id" />
+        <div class="field">
+          <label>Leave Type</label>
+          <select id="ql_type">
+            <option value="Casual Leave">Casual Leave</option>
+            <option value="Sick Leave">Sick Leave</option>
+            <option value="Paid Leave">Paid Leave</option>
+            <option value="Unpaid Leave">Unpaid Leave</option>
+          </select>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Start Date</label><input type="date" id="ql_start_date" required /></div>
+          <div class="field"><label>End Date</label><input type="date" id="ql_end_date" required /></div>
+        </div>
+        <div class="field">
+          <label>Reason</label>
+          <textarea id="ql_reason" rows="3" placeholder="Reason for leave..." required></textarea>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn" onclick="$('#quickLeaveOverlay').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn primary">Submit Leave</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="overlay" id="cOverlay">
+  <div class="modal confirm" role="alertdialog" aria-modal="true" aria-labelledby="cTitle">
+    <div class="c-icon">🗑</div>
+    <h3 id="cTitle">Are you sure you want to delete this?</h3>
+    <p id="cMsg"></p>
+    <div class="c-actions">
+      <button type="button" class="btn" id="cNo">No, Cancel</button>
+      <button type="button" class="btn solid-red" id="cYes">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<!-- External scripts for Excel, PDF, and Charts -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/js/export-helpers.js"></script>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const COLORS = ['#2563eb','#7c3aed','#db2777','#ea580c','#059669','#0891b2','#ca8a04','#4f46e5','#dc2626','#0d9488'];
+const FIELDS = ['emp_code','full_name','email','phone','department','designation','salary','joining_date'];
+
+async function api(url, opts = {}) {
+  const cfg = { headers: { 'Content-Type': 'application/json' }, ...opts };
+  if (opts.body) cfg.body = JSON.stringify(opts.body);
+  const res = await fetch(url, cfg);
+  let data = {}; try { data = await res.json(); } catch (_) {}
+  if (!res.ok) { const e = new Error(data.message || 'Something went wrong.'); e.errors = data.errors || null; throw e; }
+  return data;
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+const initials = n => (n||'').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const colorFor = s => { let h = 0; for (const c of (s||'')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
+
+/* Avatar helper: shows uploaded photo if available, else initials */
+function avatar(e, lg = false, canEdit = false) {
+  if (!e) return '';
+  const camOverlay = canEdit ? `<div class="avatar-cam" title="Change Photo" onclick="triggerDirectAvatar(${e.id})">📷</div>` : '';
+  if (e.avatar) {
+    return `<div class="avatar ${lg ? 'lg' : ''}" style="background:#e5e7eb">
+      <img src="${esc(e.avatar)}" alt="${esc(e.full_name)}" onerror="this.parentElement.outerHTML=renderInitials('${esc(e.full_name)}', ${lg})" />
+      ${camOverlay}
+    </div>`;
+  }
+  return `<div class="avatar ${lg ? 'lg' : ''}" style="background:${colorFor(e.full_name)}">
+    ${esc(initials(e.full_name))}
+    ${camOverlay}
+  </div>`;
+}
+
+function renderInitials(name, lg = false) {
+  return `<div class="avatar ${lg ? 'lg' : ''}" style="background:${colorFor(name)}">${esc(initials(name))}</div>`;
+}
+
+function parseD(s) { const [y, m, d] = String(s).slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d); }
+function fmtDate(s) { if (!s) return '-'; const d = parseD(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+function fmtStamp(s) { if (!s) return '-'; const t = String(s); return fmtDate(t) + (t.length > 10 ? ' · ' + t.slice(11, 16) : ''); }
+function monthsSince(s) { const d = parseD(s), n = new Date(); return Math.max(0, (n.getFullYear() - d.getFullYear()) * 12 + n.getMonth() - d.getMonth() - (n.getDate() < d.getDate() ? 1 : 0)); }
+function tenure(s) { const m = monthsSince(s), y = Math.floor(m / 12); return y ? `${y}y ${m % 12}m` : `${m}m`; }
+function levelOf(s) { const y = monthsSince(s) / 12; return y >= 5 ? 'Senior' : y >= 2 ? 'Mid-level' : 'New joiner'; }
+function daysToAnniv(s) { const d = parseD(s), n = new Date(), t = new Date(n.getFullYear(), n.getMonth(), n.getDate()); let a = new Date(n.getFullYear(), d.getMonth(), d.getDate()); if (a < t) a = new Date(n.getFullYear() + 1, d.getMonth(), d.getDate()); return Math.round((a - t) / 864e5); }
+let toastT; function toast(msg, type = 'ok') { const t = $('#toast'); t.textContent = msg; t.className = 'show ' + type; clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 3000); }
+
+/* ---------- custom confirm modal ---------- */
+let confirmResolve = null;
+function askConfirm(message, yesText = 'Yes, Delete') {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    $('#cMsg').innerHTML = message;
+    $('#cYes').textContent = yesText;
+    $('#cOverlay').classList.add('open');
+    setTimeout(() => $('#cNo').focus(), 30);
+  });
+}
+function closeConfirm(result) {
+  $('#cOverlay').classList.remove('open');
+  if (confirmResolve) { confirmResolve(result); confirmResolve = null; }
+}
+$('#cYes').addEventListener('click', () => closeConfirm(true));
+$('#cNo').addEventListener('click', () => closeConfirm(false));
+$('#cOverlay').addEventListener('mousedown', e => { if (e.target.id === 'cOverlay') closeConfirm(false); });
+
+/* ---------- state ---------- */
+let all = [], selectedId = null, checked = new Set(), editId = null;
+let currentAvatarBase64 = null;
+let directAvatarEmpId = null;
+
+// Chart instances
+let salaryChart = null;
+let trendChart = null;
+
+async function load(keepSel = true) {
+  try {
+    const { employees } = await api('/api/employees');
+    all = employees;
+    if (!keepSel || !all.some(e => e.id === selectedId)) selectedId = null;
+    checked = new Set([...checked].filter(id => all.some(e => e.id === id)));
+    renderList(); renderDetail();
+  } catch (err) {
+    $('#list').innerHTML = `<div class="empty">${esc(err.message)}<br><br><button class="btn sm" onclick="load()">Retry</button></div>`;
+  }
+}
+
+function visible() {
+  const q = $('#search').value.trim().toLowerCase(), d = $('#deptFilter').value, s = $('#sortBy').value;
+  let r = all.filter(e => (!d || e.department === d) &&
+    (!q || [e.full_name, e.emp_code, e.email, e.designation, e.department].some(v => String(v).toLowerCase().includes(q))));
+  r.sort((a, b) => s === 'name' ? a.full_name.localeCompare(b.full_name)
+    : s === 'salary' ? b.salary - a.salary
+    : s === 'joined' ? String(a.joining_date).localeCompare(String(b.joining_date))
+    : b.id - a.id);
+  return r;
+}
+
+/* ---------- list ---------- */
+function renderList() {
+  const rows = visible();
+  const week = all.filter(e => e.created_at && (Date.now() - new Date(String(e.created_at).replace(' ', 'T')).getTime()) < 7 * 864e5).length;
+  const pill = $('#newPill'); pill.style.display = all.length ? '' : 'none'; pill.textContent = week ? `${week} New` : `${all.length} Total`;
+
+  $('#list').innerHTML = rows.length ? rows.map(e => `
+    <div class="item ${e.id === selectedId ? 'active' : ''}" data-id="${e.id}">
+      <input type="checkbox" class="chk" ${checked.has(e.id) ? 'checked' : ''} />
+      ${avatar(e)}
+      <div class="meta"><div class="nm">${esc(e.full_name)}</div><div class="ds">${esc(e.designation)} · ${esc(e.department)}</div></div>
+      <div class="go">›</div>
+    </div>`).join('')
+    : `<div class="empty">${all.length ? 'No employees match your search.' : 'No employees yet.<br><br><button class="btn primary sm" onclick="openForm()">+ Add first employee</button>'}</div>`;
+  syncSel(rows);
+}
+
+function syncSel(rows = visible()) {
+  const n = checked.size, allOn = rows.length && rows.every(e => checked.has(e.id));
+  $('#selAll').checked = !!allOn;
+  $('#selInfo').textContent = n ? `${n} selected` : `Select All (${rows.length})`;
+  $('#bulkDel').style.display = n ? '' : 'none';
+}
+
+$('#list').addEventListener('click', ev => {
+  const it = ev.target.closest('.item'); if (!it) return;
+  const id = +it.dataset.id;
+  if (ev.target.classList.contains('chk')) { ev.target.checked ? checked.add(id) : checked.delete(id); syncSel(); return; }
+  selectedId = id; renderList(); renderDetail(); $('#app').classList.add('show-detail');
+});
+$('#selAll').addEventListener('change', e => { visible().forEach(x => e.target.checked ? checked.add(x.id) : checked.delete(x.id)); renderList(); });
+['search', 'deptFilter', 'sortBy'].forEach(id => $('#' + id).addEventListener(id === 'search' ? 'input' : 'change', renderList));
+
+$('#bulkDel').addEventListener('click', async () => {
+  if (!await askConfirm(`You are about to delete <b>${checked.size} selected employee(s)</b>.<br>This action cannot be undone.`)) return;
+  const ids = [...checked];
+  const res = await Promise.allSettled(ids.map(id => api('/api/employees/' + id, { method: 'DELETE' })));
+  const ok = res.filter(r => r.status === 'fulfilled').length;
+  toast(`${ok} employee(s) deleted.`, ok === ids.length ? 'ok' : 'bad');
+  checked.clear(); await load();
+});
+
+/* Export buttons */
+$('#csvBtn').addEventListener('click', () => {
+  const rows = checked.size ? all.filter(e => checked.has(e.id)) : visible();
+  if (!rows.length) return toast('No data to export.', 'bad');
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [['Emp ID','Name','Email','Phone','Department','Designation','Salary','Joining Date'].join(',')]
+    .concat(rows.map(e => [e.emp_code, e.full_name, e.email, e.phone, e.department, e.designation, e.salary, String(e.joining_date).slice(0, 10)].map(q).join(','))).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'employees.csv'; a.click();
+  toast(`Exported ${rows.length} record(s) as CSV.`);
+});
+
+$('#excelBtn').addEventListener('click', () => {
+  const rows = checked.size ? all.filter(e => checked.has(e.id)) : visible();
+  exportToExcel(rows, { filter: $('#deptFilter').value });
+});
+
+$('#pdfBtn').addEventListener('click', () => {
+  const rows = checked.size ? all.filter(e => checked.has(e.id)) : visible();
+  exportToPdf(rows, { filter: $('#deptFilter').value });
+});
+
+/* ---------- Employee Profile Detail ---------- */
+function renderDetail() {
+  const el = $('#detail'), e = all.find(x => x.id === selectedId);
+  if (!e) return renderOverview(el);
+
+  const deptList = all.filter(x => x.department === e.department);
+  const deptAvg = deptList.reduce((s, x) => s + Number(x.salary), 0) / (deptList.length || 1);
+  const diff = deptAvg ? Math.round((e.salary - deptAvg) / deptAvg * 100) : 0;
+  const dd = daysToAnniv(e.joining_date);
+
+  el.scrollTop = 0;
+  el.innerHTML = `
+  <div class="dhead">
+    <button class="back" id="backBtn" aria-label="Back">‹</button>
+    ${avatar(e, true, true)}
+    <div class="who">
+      <h2>${esc(e.full_name)} <span class="tag">${levelOf(e.joining_date)}</span></h2>
+      <div class="role">${esc(e.designation)} · ${esc(e.department)}</div>
+    </div>
+    <button class="btn sm" onclick="triggerDirectAvatar(${e.id})" title="Update photo">📷 Photo</button>
+    <button class="btn outline-accent sm" id="editTop">✎ Edit</button>
+    <div class="kebab">
+      <button id="kebabBtn" aria-label="More">⋮</button>
+      <div class="menu" id="menu">
+        <button data-act="edit">Edit details</button>
+        <button data-act="photo">Change profile photo</button>
+        <button data-act="copyMail">Copy email</button>
+        <button data-act="copyPhone">Copy phone</button>
+        <button data-act="close">Close profile</button>
+        <button data-act="del" class="red">Delete employee</button>
+      </div>
+    </div>
+  </div>
+  <div class="dbody">
+    <div>
+      <div class="sec-title"><h3>Overview</h3><small>Joined: ${fmtDate(e.joining_date)}</small></div>
+      <div class="cards">
+        <div class="stat"><div class="l">Tenure</div><div class="v">${tenure(e.joining_date)}</div></div>
+        <div class="stat"><div class="l">Monthly Salary</div><div class="v">${money(e.salary)}</div></div>
+        <div class="stat"><div class="l">Annual Package</div><div class="v">${money(e.salary * 12)}</div></div>
+        <div class="stat"><div class="l">vs ${esc(e.department)} Avg</div><div class="v ${diff >= 0 ? 'good' : 'bad'}">${diff >= 0 ? '+' : ''}${diff}<small>%</small></div></div>
+      </div>
+    </div>
+
+    <!-- Attendance Module Box -->
+    <div class="box">
+      <div class="box-head">
+        <h3>Attendance & Timesheet</h3>
+        <a class="btn sm" href="/attendance">Open Full Attendance ›</a>
+      </div>
+      <div class="cards" style="margin-bottom:14px">
+        <div class="stat"><div class="l">Present (This Month)</div><div class="v good" id="d_pres">-</div></div>
+        <div class="stat"><div class="l">Absent Days</div><div class="v bad" id="d_abs">-</div></div>
+        <div class="stat"><div class="l">Half Days</div><div class="v warn" id="d_half">-</div></div>
+        <div class="stat"><div class="l">Attendance Rate</div><div class="v" id="d_rate">-%</div></div>
+      </div>
+      <div style="background:var(--soft);padding:12px 14px;border-radius:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:13px">Mark Today (${new Date().toLocaleDateString('en-IN', {month:'short', day:'numeric'})}):</span>
+        <button class="btn sm" onclick="markTodayAtt(${e.id}, 'Present')">✓ Present</button>
+        <button class="btn sm danger" onclick="markTodayAtt(${e.id}, 'Absent')">✕ Absent</button>
+        <button class="btn sm" onclick="markTodayAtt(${e.id}, 'Half Day')">½ Half Day</button>
+      </div>
+    </div>
+
+    <!-- Leave Management Box -->
+    <div class="box">
+      <div class="box-head">
+        <h3>Leave Applications</h3>
+        <button class="btn sm primary" onclick="openQuickLeave(${e.id}, '${esc(e.full_name)}')">+ Apply Leave</button>
+      </div>
+      <div id="d_leaves_list" style="color:var(--muted);font-size:13px">Loading leave history...</div>
+    </div>
+
+    <div class="box">
+      <div class="box-head">
+        <h3>Work Details <span class="tag green">Active</span></h3>
+        <div class="empcode">EMP <b>${esc(e.emp_code)}</b>
+          <button class="copy" data-act="copyCode" title="Copy ID">⧉</button></div>
+      </div>
+      <div class="info">
+        <div><div class="k">Department</div><div class="val">${esc(e.department)}</div></div>
+        <div><div class="k">Designation</div><div class="val">${esc(e.designation)}</div></div>
+        <div><div class="k">Date Joined</div><div class="val">${fmtDate(e.joining_date)}</div></div>
+        <div><div class="k">Phone Number</div><div class="val">+91 ${esc(e.phone)}</div></div>
+        <div><div class="k">Email</div><div class="val">${esc(e.email)}</div></div>
+        <div><div class="k">Team Size (${esc(e.department)})</div><div class="val">${deptList.length} member${deptList.length > 1 ? 's' : ''}</div></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="box-head"><h3>Quick Actions</h3></div>
+      <div class="quick">
+        <a class="btn" href="tel:${esc(e.phone)}">📞 Call</a>
+        <a class="btn" href="mailto:${esc(e.email)}">✉️ Email</a>
+        <a class="btn" target="_blank" rel="noopener" href="https://wa.me/91${esc(e.phone)}">💬 WhatsApp</a>
+        <button class="btn" onclick="openQuickLeave(${e.id}, '${esc(e.full_name)}')">🏖 Leave</button>
+        <button class="btn" data-act="edit">✎ Edit</button>
+        <button class="btn danger" data-act="del">🗑 Delete</button>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="box-head"><h3>Employee Activity</h3></div>
+      <div class="tl">
+        <div class="tl-item"><div class="tl-ic c">🚀</div><div class="tl-main"><div class="t">Joined the company <span>${fmtDate(e.joining_date)}</span></div><div class="s">Started as ${esc(e.designation)} in ${esc(e.department)} department.</div></div></div>
+        <div class="tl-item"><div class="tl-ic d">💾</div><div class="tl-main"><div class="t">Record saved to database <span>${fmtStamp(e.created_at)}</span></div><div class="s">Stored in MySQL and appended to the employees.txt file.</div></div></div>
+        <div class="tl-item"><div class="tl-ic b">🎉</div><div class="tl-main"><div class="t">Next work anniversary <span>${dd === 0 ? 'Today!' : 'in ' + dd + ' day' + (dd > 1 ? 's' : '')}</span></div><div class="s">${Math.floor(monthsSince(e.joining_date) / 12) + 1} year${Math.floor(monthsSince(e.joining_date) / 12) ? 's' : ''} with the company.</div></div></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Fetch Attendance and Leaves for this employee
+  loadEmpAttendance(e.id);
+  loadEmpLeaves(e.id);
+}
+
+/* Load Attendance summary for selected employee */
+async function loadEmpAttendance(empId) {
+  try {
+    const res = await api(`/api/attendance/employee/${empId}`);
+    const s = res.summary || {};
+    $('#d_pres').textContent = s.present || 0;
+    $('#d_abs').textContent = s.absent || 0;
+    $('#d_half').textContent = s.half_day || 0;
+    $('#d_rate').textContent = `${s.rate || 0}%`;
+  } catch (_) {}
+}
+
+async function markTodayAtt(empId, status) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    await api('/api/attendance', {
+      method: 'POST',
+      body: { employee_id: empId, date: today, status }
+    });
+    toast(`Today's attendance marked as ${status}.`);
+    loadEmpAttendance(empId);
+  } catch (err) { toast(err.message, 'bad'); }
+}
+
+/* Load Leave records for selected employee */
+async function loadEmpLeaves(empId) {
+  const container = $('#d_leaves_list');
+  try {
+    const res = await api(`/api/leaves?employee_id=${empId}`);
+    const lList = res.leaves || [];
+    if (!lList.length) {
+      container.innerHTML = '<div style="color:var(--muted);padding:8px 0">No leave applications submitted yet.</div>';
+      return;
+    }
+    container.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px">` +
+      lList.slice(0, 4).map(l => {
+        const cls = l.status === 'Approved' ? 'tag green' : l.status === 'Pending' ? 'tag warn' : 'tag bad';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:10px">
+            <div>
+              <div style="font-weight:600">${esc(l.leave_type)} · <span style="font-weight:400;color:var(--muted)">${l.days} day(s)</span></div>
+              <div style="font-size:12px;color:var(--muted)">${String(l.start_date).slice(0,10)} to ${String(l.end_date).slice(0,10)} &bull; ${esc(l.reason)}</div>
+            </div>
+            <span class="${cls}">${l.status}</span>
+          </div>`;
+      }).join('') +
+      `</div>`;
+  } catch (_) {}
+}
+
+/* ---------- Company Overview with Chart.js Graphs ---------- */
+function renderOverview(el) {
+  const total = all.length, sum = all.reduce((s, e) => s + Number(e.salary), 0);
+  const byDept = {}; all.forEach(e => byDept[e.department] = (byDept[e.department] || 0) + 1);
+  const depts = Object.entries(byDept).sort((a, b) => b[1] - a[1]), max = depts[0] ? depts[0][1] : 1;
+  const recent = [...all].sort((a, b) => b.id - a.id).slice(0, 5);
+  const top = [...all].sort((a, b) => b.salary - a.salary).slice(0, 5);
+  const mini = e => `<div class="mini" data-pick="${e.id}">${avatar(e)}<div><div class="n">${esc(e.full_name)}</div><div class="d">${esc(e.designation)} · ${money(e.salary)}</div></div></div>`;
+
+  el.innerHTML = `
+  <div class="dhead"><button class="back" id="backBtn">‹</button>
+    <div class="who"><h2>Company Overview</h2><div class="role">Select an employee from the list to view full profile</div></div>
+    <a class="btn sm" href="/report">Full Report</a></div>
+  <div class="dbody">
+    <div class="cards">
+      <div class="stat"><div class="l">Total Employees</div><div class="v">${total}</div></div>
+      <div class="stat"><div class="l">Average Salary</div><div class="v">${money(total ? sum / total : 0)}</div></div>
+      <div class="stat"><div class="l">Monthly Payroll</div><div class="v">${money(sum)}</div></div>
+      <div class="stat"><div class="l">Departments</div><div class="v">${depts.length}</div></div>
+    </div>
+
+    <!-- Chart.js Graphs: Salary & Joining Trend -->
+    <div class="two">
+      <div class="box">
+        <div class="box-head"><h3>📊 Department Salary Analysis</h3><small>Average Salary (₹)</small></div>
+        <div style="height:230px;position:relative"><canvas id="ovSalaryChart"></canvas></div>
+      </div>
+      <div class="box">
+        <div class="box-head"><h3>📈 Employee Joining Trend</h3><small>Headcount Growth</small></div>
+        <div style="height:230px;position:relative"><canvas id="ovTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="box"><div class="box-head"><h3>Department Distribution</h3></div>
+      ${depts.length ? `<div class="bars">${depts.map(([n, c]) => `
+        <div class="bar-row"><span>${esc(n)}</span><div class="bar-track"><div class="bar-fill" style="width:${c / max * 100}%"></div></div><b>${c}</b></div>`).join('')}</div>`
+        : '<div class="empty" style="padding:20px">No data yet. Add your first employee.</div>'}
+    </div>
+
+    <div class="two">
+      <div class="box"><div class="box-head"><h3>Recently Added</h3></div>${recent.map(mini).join('') || '<div class="empty" style="padding:16px">—</div>'}</div>
+      <div class="box"><div class="box-head"><h3>Top Earners</h3></div>${top.map(mini).join('') || '<div class="empty" style="padding:16px">—</div>'}</div>
+    </div>
+    <div style="color:var(--muted);font-size:12.5px">Tips: press <kbd>/</kbd> to search · <kbd>N</kbd> to add employee · <kbd>Esc</kbd> to close</div>
+  </div>`;
+
+  initOverviewCharts();
+}
+
+async function initOverviewCharts() {
+  if (typeof Chart === 'undefined') return;
+  try {
+    const stats = await api('/api/employees/stats');
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+    const textColor = isDark ? '#8b98a9' : '#6b7280';
+
+    // 1. Salary Chart
+    const salCanvas = $('#ovSalaryChart');
+    if (salCanvas && stats.departments) {
+      if (salaryChart) salaryChart.destroy();
+      salaryChart = new Chart(salCanvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: stats.departments.map(d => d.department),
+          datasets: [{
+            label: 'Avg Salary (₹)',
+            data: stats.departments.map(d => Math.round(d.avg_salary)),
+            backgroundColor: stats.departments.map((_, i) => COLORS[i % COLORS.length]),
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` Avg: ₹${Number(ctx.raw).toLocaleString('en-IN')}` } }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, callback: val => '₹' + (val >= 1000 ? (val/1000) + 'k' : val) },
+              grid: { color: gridColor }
+            },
+            x: { ticks: { color: textColor }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // 2. Joining Trend Chart
+    const trendCanvas = $('#ovTrendChart');
+    if (trendCanvas && stats.joiningTrend) {
+      if (trendChart) trendChart.destroy();
+      const labels = stats.joiningTrend.map(t => t.month);
+      const data = stats.joiningTrend.map(t => t.count);
+
+      trendChart = new Chart(trendCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels.length ? labels : ['No data'],
+          datasets: [{
+            label: 'New Joiners',
+            data: data.length ? data : [0],
+            borderColor: isDark ? '#4c8dff' : '#1f5fd6',
+            backgroundColor: isDark ? 'rgba(76,141,255,0.15)' : 'rgba(31,95,214,0.12)',
+            fill: true,
+            tension: 0.38,
+            pointRadius: 4,
+            pointBackgroundColor: isDark ? '#4c8dff' : '#1f5fd6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: textColor, stepSize: 1, precision: 0 },
+              grid: { color: gridColor }
+            },
+            x: { ticks: { color: textColor }, grid: { display: false } }
+          }
+        }
+      });
+    }
+  } catch (_) {}
+}
+
+/* ---------- Detail Event Listeners ---------- */
+$('#detail').addEventListener('click', async ev => {
+  const pick = ev.target.closest('[data-pick]');
+  if (pick) { selectedId = +pick.dataset.pick; renderList(); renderDetail(); return; }
+  if (ev.target.closest('#backBtn')) { $('#app').classList.remove('show-detail'); return; }
+  if (ev.target.closest('#editTop')) return openForm(all.find(e => e.id === selectedId));
+  if (ev.target.closest('#kebabBtn')) { $('#menu').classList.toggle('open'); return; }
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  $('#menu')?.classList.remove('open');
+  const e = all.find(x => x.id === selectedId); if (!e) return;
+  const copy = async (t, m) => { try { await navigator.clipboard.writeText(t); toast(m); } catch (_) { toast('Copy not supported here.', 'bad'); } };
+  switch (b.dataset.act) {
+    case 'edit': openForm(e); break;
+    case 'photo': triggerDirectAvatar(e.id); break;
+    case 'copyMail': copy(e.email, 'Email copied.'); break;
+    case 'copyPhone': copy(e.phone, 'Phone copied.'); break;
+    case 'copyCode': copy(e.emp_code, 'Employee ID copied.'); break;
+    case 'close': selectedId = null; renderList(); renderDetail(); $('#app').classList.remove('show-detail'); break;
+    case 'del':
+      if (!await askConfirm(`Do you really want to delete <b>${esc(e.full_name)}</b>?<br>This action cannot be undone.`)) return;
+      try { await api('/api/employees/' + e.id, { method: 'DELETE' }); toast('Employee deleted.'); selectedId = null; $('#app').classList.remove('show-detail'); await load(false); }
+      catch (err) { toast(err.message, 'bad'); }
+  }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.kebab')) $('#menu')?.classList.remove('open'); });
+
+/* ---------- Direct Photo Upload for Selected Employee ---------- */
+function triggerDirectAvatar(empId) {
+  directAvatarEmpId = empId;
+  const inp = $('#directAvatarInput');
+  inp.value = '';
+  inp.click();
+}
+
+$('#directAvatarInput').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  if (!file || !directAvatarEmpId) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const res = await api(`/api/employees/${directAvatarEmpId}/avatar`, {
+        method: 'POST',
+        body: { avatar: reader.result }
+      });
+      toast(res.message);
+      await load();
+      renderDetail();
+    } catch (err) { toast(err.message, 'bad'); }
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ---------- Quick Leave Modal ---------- */
+function openQuickLeave(empId, empName) {
+  $('#ql_employee_id').value = empId;
+  $('#quickLeaveTitle').textContent = `Apply Leave (${empName})`;
+  const today = new Date().toISOString().slice(0, 10);
+  $('#ql_start_date').value = today;
+  $('#ql_end_date').value = today;
+  $('#ql_reason').value = '';
+  $('#quickLeaveOverlay').classList.add('open');
+}
+
+$('#quickLeaveForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const body = {
+    employee_id: $('#ql_employee_id').value,
+    leave_type: $('#ql_type').value,
+    start_date: $('#ql_start_date').value,
+    end_date: $('#ql_end_date').value,
+    reason: $('#ql_reason').value
+  };
+  try {
+    const res = await api('/api/leaves', { method: 'POST', body });
+    toast(res.message);
+    $('#quickLeaveOverlay').classList.remove('open');
+    if (selectedId) loadEmpLeaves(selectedId);
+  } catch (err) { toast(err.message, 'bad'); }
+});
+
+/* ---------- Add / Edit Form with Photo Upload ---------- */
+function clearErrs() { document.querySelectorAll('.err').forEach(e => e.textContent = ''); $('#formAlert').className = 'formalert'; }
+
+function openForm(emp) {
+  clearErrs(); $('#form').reset(); editId = emp ? emp.id : null;
+  $('#mTitle').textContent = emp ? 'Edit Employee' : 'Add Employee';
+  $('#mSave').textContent = emp ? 'Update Employee' : 'Save Employee';
+
+  currentAvatarBase64 = emp && emp.avatar ? emp.avatar : null;
+  updateFormAvatarPreview(currentAvatarBase64);
+
+  if (emp) {
+    FIELDS.forEach(f => $('#f_' + f).value = emp[f] ?? '');
+    $('#f_joining_date').value = String(emp.joining_date).slice(0, 10);
+  } else {
+    $('#f_joining_date').value = new Date().toISOString().slice(0, 10);
+  }
+  $('#overlay').classList.add('open'); setTimeout(() => $('#f_emp_code').focus(), 50);
+}
+
+function updateFormAvatarPreview(urlOrBase64) {
+  const img = $('#f_avatar_preview');
+  const ph = $('#f_avatar_ph');
+  const rem = $('#f_avatar_remove');
+  if (urlOrBase64 && urlOrBase64 !== 'REMOVE') {
+    img.src = urlOrBase64;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+    rem.style.display = 'inline-flex';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    ph.style.display = 'block';
+    rem.style.display = 'none';
+  }
+}
+
+// Avatar upload events in modal
+$('#f_avatar_box').addEventListener('click', () => $('#f_avatar_file').click());
+$('#f_avatar_btn').addEventListener('click', () => $('#f_avatar_file').click());
+
+$('#f_avatar_file').addEventListener('change', ev => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('Please select an image file.', 'bad');
+  if (file.size > 5 * 1024 * 1024) return toast('Image size must be less than 5MB.', 'bad');
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    currentAvatarBase64 = reader.result;
+    updateFormAvatarPreview(currentAvatarBase64);
+  };
+  reader.readAsDataURL(file);
+});
+
+$('#f_avatar_remove').addEventListener('click', () => {
+  currentAvatarBase64 = 'REMOVE';
+  updateFormAvatarPreview(null);
+  $('#f_avatar_file').value = '';
+});
+
+function closeForm() { $('#overlay').classList.remove('open'); }
+$('#addBtn').addEventListener('click', () => openForm());
+$('#mClose').addEventListener('click', closeForm); $('#mCancel').addEventListener('click', closeForm);
+$('#overlay').addEventListener('mousedown', e => { if (e.target.id === 'overlay') closeForm(); });
+$('#f_phone').addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, ''));
+
+$('#form').addEventListener('submit', async ev => {
+  ev.preventDefault(); clearErrs();
+  const body = {};
+  FIELDS.forEach(f => body[f] = $('#f_' + f).value);
+  if (currentAvatarBase64) body.avatar = currentAvatarBase64;
+
+  const btn = $('#mSave'); btn.disabled = true;
+  try {
+    const data = editId ? await api('/api/employees/' + editId, { method: 'PUT', body })
+                        : await api('/api/employees', { method: 'POST', body });
+    toast(data.message); closeForm();
+    const code = body.emp_code.trim().toUpperCase();
+    await load();
+    const saved = all.find(e => e.emp_code === code); if (saved) { selectedId = saved.id; renderList(); renderDetail(); }
+  } catch (err) {
+    Object.entries(err.errors || {}).forEach(([k, v]) => { const el = document.querySelector(`.err[data-e="${k}"]`); if (el) el.textContent = v; });
+    const a = $('#formAlert'); a.textContent = err.message; a.className = 'formalert show';
+  } finally { btn.disabled = false; }
+});
+
+/* ---------- theme + shortcuts ---------- */
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('theme', t); } catch (_) {}
+  if (!selectedId) initOverviewCharts();
+}
+try { setTheme(localStorage.getItem('theme') || 'light'); } catch (_) {}
+$('#themeBtn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+  if (e.key === 'Escape') {
+    if ($('#cOverlay').classList.contains('open')) { closeConfirm(false); return; }
+    if ($('#quickLeaveOverlay').classList.contains('open')) { $('#quickLeaveOverlay').classList.remove('open'); return; }
+    closeForm(); $('#menu')?.classList.remove('open');
+  }
+  else if (!typing && e.key === '/') { e.preventDefault(); $('#search').focus(); }
+  else if (!typing && (e.key === 'n' || e.key === 'N') && !$('#overlay').classList.contains('open')) { e.preventDefault(); openForm(); }
+});
+
+/* ---------- init ---------- */
+(async function init() {
+  await load(false);
+  const eid = new URLSearchParams(location.search).get('edit');
+  if (eid) {
+    const emp = all.find(e => e.id === +eid);
+    history.replaceState(null, '', '/dashboard');
+    if (emp) { selectedId = emp.id; renderList(); renderDetail(); openForm(emp); }
+  }
+})();
+</script>
+</body>
+</html>
