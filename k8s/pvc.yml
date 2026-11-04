@@ -1,0 +1,12 @@
+# App ka data: uploads (avatars) + data/employees.txt
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: employee-app-pvc
+  namespace: employee-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

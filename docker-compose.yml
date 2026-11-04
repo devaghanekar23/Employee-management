@@ -1,0 +1,40 @@
+# Local testing ke liye (Kubernetes se pehle): docker compose up --build
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: employee-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: employee-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpass123
+      DB_NAME: employee_manager
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - app_data:/app/data
+      - app_uploads:/app/public/uploads
+
+volumes:
+  mysql_data:
+  app_data:
+  app_uploads:

@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+Dockerfile
+.dockerignore
+docker-compose.yml
+k8s
+employee-data-manager.zip
+data/employees.txt
+public/uploads/avatars/*
+README.md
