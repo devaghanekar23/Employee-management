@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Employee Self-Service Portal</title>
+<link rel="stylesheet" href="/css/style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
+  --primary:#1f5fd6; --primary-soft:#e8f0fe; --accent:#f58a5b; --accent-soft:#fff1ea;
+  --green:#16a34a; --green-soft:#eafaf0; --red:#dc2626; --red-soft:#fef2f2;
+  --amber:#d97706; --amber-soft:#fef3c7; --purple:#7c3aed; --purple-soft:#f3e8ff;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 12px 28px rgba(0,0,0,.08);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --soft:#1c2330; --text:#e6edf3; --muted:#8b98a9; --line:#262e3b;
+  --primary:#4c8dff; --primary-soft:#172640; --accent:#ff9d73; --accent-soft:#3a2418;
+  --green:#3fb950; --green-soft:#12301c; --red:#f85149; --red-soft:#3b1618;
+  --amber:#f59e0b; --amber-soft:#362810; --purple:#a78bfa; --purple-soft:#2e1f4d;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+/* Header */
+.portal-head{
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+  padding:0 24px;
+  height:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),#60a5fa);
+  color:#fff;display:grid;place-items:center;
+  font-weight:700;font-size:18px;
+}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.brand small{font-size:11px;color:var(--muted);display:block;margin-top:-2px}
+
+.head-right{display:flex;align-items:center;gap:10px}
+.clock-pill{
+  background:var(--soft);
+  padding:6px 12px;
+  border-radius:8px;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel);
+  display:grid;place-items:center;color:var(--muted);
+  position:relative;transition:.15s;
+}
+.icon-btn:hover{background:var(--soft);color:var(--text)}
+.badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--red);color:#fff;
+  border-radius:999px;font-size:10px;font-weight:700;
+  padding:1px 5px;border:2px solid var(--panel);
+}
+
+.user-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:4px 10px 4px 4px;border-radius:999px;
+  border:1px solid var(--line);background:var(--panel);
+  cursor:pointer;transition:.15s;position:relative;
+}
+.user-pill:hover{background:var(--soft)}
+.user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--primary);color:#fff;
+  display:grid;place-items:center;font-weight:700;
+  font-size:12px;overflow:hidden;
+}
+.user-avatar img{width:100%;height:100%;object-fit:cover}
+.user-meta{line-height:1.2}
+.user-meta .n{font-size:13px;font-weight:600}
+.user-meta .r{font-size:11px;color:var(--muted)}
+
+/* Dropdown menus */
+.dropdown-menu{
+  position:absolute;right:0;top:48px;
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);
+  min-width:220px;padding:8px;display:none;z-index:60;
+  animation:pop .15s ease-out;
+}
+.dropdown-menu.open{display:block}
+.dropdown-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:8px;font-size:13px;
+  color:var(--text);border:none;background:none;width:100%;
+  text-align:left;cursor:pointer;transition:.1s;
+}
+.dropdown-item:hover{background:var(--soft)}
+.dropdown-item.danger{color:var(--red)}
+
+/* Navigation Tabs Bar */
+.nav-bar{
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+  padding:0 24px;
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.nav-bar::-webkit-scrollbar{display:none}
+.nav-tab{
+  padding:14px 16px;
+  font-weight:600;
+  font-size:13.5px;
+  color:var(--muted);
+  border:none;background:none;
+  border-bottom:2px solid transparent;
+  display:flex;align-items:center;gap:8px;
+  white-space:nowrap;
+  transition:.15s;
+}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* Main Container */
+.main{
+  flex:1;
+  padding:24px;
+  max-width:1200px;
+  width:100%;
+  margin:0 auto;
+}
+
+/* Sections */
+.tab-content{display:none}
+.tab-content.active{display:block;animation:fade .2s ease-out}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Cards & Layout */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3, 1fr);gap:18px}
+.grid-4{display:grid;grid-template-columns:repeat(4, 1fr);gap:16px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.box{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px 22px;
+  box-shadow:var(--shadow);
+  margin-bottom:20px;
+}
+.box-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;gap:10px;flex-wrap:wrap;
+}
+.box-head h3{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+
+.btn{
+  border:1px solid var(--line);background:var(--panel);
+  color:var(--text);padding:8px 14px;border-radius:9px;
+  font-size:13px;font-weight:600;display:inline-flex;
+  align-items:center;gap:6px;transition:.15s;
+}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.success{background:var(--green);border-color:var(--green);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.outline{border-color:var(--line);background:none}
+
+/* Welcome Banner */
+.welcome-card{
+  background:linear-gradient(135deg,var(--primary),#3b82f6);
+  color:#fff;
+  border-radius:18px;
+  padding:24px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+  box-shadow:0 8px 24px rgba(31,95,214,.25);
+  flex-wrap:wrap;
+  gap:16px;
+}
+.welcome-card h2{font-size:22px;font-weight:700}
+.welcome-card p{font-size:13.5px;opacity:.9;margin-top:4px}
+
+/* Punch In / Out Card */
+.punch-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:22px;
+  gap:20px;
+  flex-wrap:wrap;
+}
+.punch-time{
+  font-size:32px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.punch-date{color:var(--muted);font-size:13px;margin-top:2px}
+.punch-status{display:flex;align-items:center;gap:8px;margin-top:8px}
+
+.stat-pill{
+  border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;background:var(--panel);
+  transition:.15s;
+}
+.stat-pill .l{font-size:12px;color:var(--muted);font-weight:500}
+.stat-pill .v{font-size:22px;font-weight:700;color:var(--primary);margin-top:4px}
+.stat-pill .v.green{color:var(--green)}
+.stat-pill .v.amber{color:var(--amber)}
+
+/* Tables */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;text-align:left}
+th{
+  padding:12px 14px;background:var(--soft);color:var(--muted);
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+  font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tr:hover td{background:var(--soft)}
+
+.tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--primary-soft);color:var(--primary)}
+.tag.green{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--amber-soft);color:var(--amber)}
+.tag.bad{background:var(--red-soft);color:var(--red)}
+
+/* Modals */
+.overlay{
+  position:fixed;inset:0;background:rgba(10,15,25,.55);
+  display:none;align-items:center;justify-content:center;
+  padding:16px;z-index:100;backdrop-filter:blur(3px);
+}
+.overlay.open{display:flex}
+.modal{
+  background:var(--panel);border-radius:18px;
+  border:1px solid var(--line);box-shadow:var(--shadow);
+  width:100%;max-width:520px;max-height:92vh;
+  overflow-y:auto;animation:pop .2s;
+}
+.m-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.m-head h3{font-size:17px;font-weight:700}
+.m-head .x{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer}
+.m-body{padding:20px 22px}
+.m-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--soft)}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+input,select,textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);border-radius:9px;
+  font-size:13.5px;font-family:inherit;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+
+#toast{
+  position:fixed;bottom:24px;right:24px;padding:12px 18px;
+  border-radius:10px;color:#fff;font-size:13.5px;font-weight:600;
+  opacity:0;transform:translateY(10px);transition:.2s;z-index:200;pointer-events:none;
+}
+#toast.show{opacity:1;transform:none}
+#toast.ok{background:var(--green)}
+#toast.bad{background:var(--red)}
+
+/* Mobile Responsiveness */
+@media(max-width:860px){
+  .portal-head{padding:0 12px;height:56px}
+  .brand h1{font-size:15px;line-height:1.2}
+  .brand small{font-size:11px}
+  .clock-pill{display:none}
+  .head-right{gap:6px}
+  .user-meta{display:none}
+  .user-pill{padding:4px}
+  
+  .nav-bar{padding:0 10px;scrollbar-width:none}
+  .nav-bar::-webkit-scrollbar{display:none}
+  .nav-tab{padding:12px 14px;font-size:13px;flex-shrink:0}
+
+  .main{padding:14px 12px 40px}
+  .grid-2, .grid-3{grid-template-columns:1fr;gap:12px}
+  .grid-4{grid-template-columns:repeat(2, 1fr);gap:10px}
+  .punch-card{flex-direction:column;align-items:stretch;gap:14px}
+  .punch-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .punch-actions .btn{width:100%;justify-content:center}
+  
+  .welcome-card{padding:16px 18px;flex-direction:column;align-items:stretch;gap:12px}
+  .welcome-card .btn{width:100%;justify-content:center}
+  
+  .box{padding:16px 14px;min-width:0;max-width:100%}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+  th, td{padding:10px 10px;font-size:12px}
+  
+  .dropdown-menu{max-width:calc(100vw - 20px);right:0}
+  
+  .modal{border-radius:14px;max-height:94vh;width:100%}
+  .m-head{padding:14px 16px}
+  .m-body{padding:16px 14px}
+  .m-foot{padding:12px 14px;flex-direction:column-reverse;gap:8px}
+  .m-foot .btn{width:100%;justify-content:center}
+}
+
+@media(max-width:540px){
+  .brand h1{font-size:14px}
+  .brand .logo{width:32px;height:32px;font-size:16px;border-radius:8px;margin-right:6px}
+  .grid-4{grid-template-columns:repeat(2, 1fr);gap:8px}
+  .stat-pill{padding:10px 12px}
+  .stat-pill .l{font-size:11px}
+  .stat-pill .v{font-size:18px}
+  .stat-pill:last-child:nth-child(odd){grid-column:1 / -1}
+  .info-grid, .form-row-2, .form-row-3{grid-template-columns:1fr;gap:10px}
+  .payslip-col-border{border-right:none !important;border-bottom:1px solid var(--line);padding-right:0 !important;padding-bottom:12px;margin-bottom:8px}
+  .sec-title h2{font-size:18px}
+  .sec-title p{font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="portal-head">
+  <div class="brand">
+    <div class="logo">E</div>
+    <div>
+      <h1>Employee Self-Service</h1>
+      <small id="userDeptRole">Loading...</small>
+    </div>
+  </div>
+
+  <div class="head-right">
+    <div class="clock-pill" id="digitalClockPill">
+      <span>🕒</span> <span id="topClock">--:--:--</span>
+    </div>
+
+    <button class="icon-btn" id="themeBtn" title="Toggle Theme" aria-label="Toggle Theme">🌓</button>
+
+    <!-- Notifications Bell -->
+    <div style="position:relative">
+      <button class="icon-btn" id="notifBell" title="Notifications">
+        🔔
+        <span class="badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="dropdown-menu" id="notifMenu" style="width:300px;right:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)">
+          <span style="font-weight:700;font-size:13px">Notifications</span>
+          <button class="btn sm" style="font-size:11px;padding:3px 8px" onclick="markAllNotifsRead()">Mark all read</button>
+        </div>
+        <div id="notifList" style="max-height:280px;overflow-y:auto;padding:6px">
+          <div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No notifications</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Dropdown -->
+    <div style="position:relative">
+      <div class="user-pill" id="userPill">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-meta">
+          <div class="n" id="userName">User</div>
+          <div class="r" id="userRoleBadge">Employee</div>
+        </div>
+      </div>
+      <div class="dropdown-menu" id="userMenu">
+        <button class="dropdown-item" onclick="switchTab('profile')">👤 My Full Profile</button>
+        <button class="dropdown-item" onclick="openChangePwdModal()">🔑 Change Password</button>
+        <div id="adminSwitchWrap" style="display:none">
+          <a class="dropdown-item" href="/dashboard" style="color:var(--primary)">⚙️ Admin Dashboard</a>
+        </div>
+        <div style="border-top:1px solid var(--line);margin:4px 0"></div>
+        <button class="dropdown-item danger" onclick="logout()">🚪 Sign Out</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Navigation Tabs -->
+<nav class="nav-bar">
+  <button class="nav-tab active" data-tab="overview">🏠 Dashboard</button>
+  <button class="nav-tab" data-tab="profile">👤 My Profile</button>
+  <button class="nav-tab" data-tab="attendance">⏱️ Attendance & Check-in</button>
+  <button class="nav-tab" data-tab="leaves">🏖️ Leaves & Balance</button>
+  <button class="nav-tab" data-tab="payslips">💰 My Payslips</button>
+</nav>
+
+<!-- Main Container -->
+<main class="main">
+
+  <!-- ==================== TAB 1: OVERVIEW ==================== -->
+  <section class="tab-content active" id="tab_overview">
+    <!-- Welcome Greeting Card -->
+    <div class="welcome-card">
+      <div>
+        <h2 id="welcomeGreeting">Welcome back! 👋</h2>
+        <p id="welcomeDateSub">Loading today's schedule and information...</p>
+      </div>
+      <button class="btn sm" onclick="switchTab('leaves')" style="background:#fff;color:var(--primary);border:none;font-weight:700">
+        + Apply for Leave
+      </button>
+    </div>
+
+    <!-- Live Web Punch Card -->
+    <div class="punch-card">
+      <div>
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--muted);letter-spacing:.04em">Live Attendance Clock</div>
+        <div class="punch-time" id="punchLiveClock">--:--:--</div>
+        <div class="punch-date" id="punchLiveDate">Loading date...</div>
+        <div class="punch-status" id="punchStatusText">
+          <span class="tag warn" id="punchBadge">Not Checked In</span>
+          <span style="font-size:12px;color:var(--muted)" id="punchDetailMsg">Start your workday by checking in</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn success" id="btnCheckIn" onclick="handleCheckIn()" style="padding:12px 20px;font-size:14px">
+          ⏱️ Check In
+        </button>
+        <button class="btn danger" id="btnCheckOut" onclick="handleCheckOut()" style="padding:12px 20px;font-size:14px;display:none">
+          🚪 Check Out
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 KPI Cards -->
+    <div class="grid-4" style="margin-bottom:22px">
+      <div class="stat-pill">
+        <div class="l">Leave Balance</div>
+        <div class="v" id="ov_leave_bal">- <small style="font-size:13px;color:var(--muted)">Days</small></div>
+      </div>
+      <div class="stat-pill">
+        <div class="l">Monthly Attendance</div>
+        <div class="v green" id="ov_att_rate">-%</div>
+      </div>
+      <div class="stat-pill">
+        <div class="l">Present Days This Month</div>
+        <div class="v" id="ov_pres_days">-</div>
+      </div>
+      <div class="stat-pill">
+        <div class="l">Latest Net Salary</div>
+        <div class="v" id="ov_latest_pay">₹-</div>
+      </div>
+    </div>
+
+    <!-- Quick Links & History -->
+    <div class="grid-2">
+      <div class="box">
+        <div class="box-head">
+          <h3>🏖️ Recent Leave Requests</h3>
+          <button class="btn sm" onclick="switchTab('leaves')">View All ›</button>
+        </div>
+        <div id="ov_recent_leaves" style="font-size:13px;color:var(--muted)">Loading leaves...</div>
+      </div>
+
+      <div class="box">
+        <div class="box-head">
+          <h3>💰 Latest Payslip Overview</h3>
+          <button class="btn sm" onclick="switchTab('payslips')">All Payslips ›</button>
+        </div>
+        <div id="ov_latest_payslip_box" style="font-size:13px;color:var(--muted)">Loading payslip...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 2: MY PROFILE ==================== -->
+  <section class="tab-content" id="tab_profile">
+    <div class="box" style="padding:28px">
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="position:relative">
+          <div class="user-avatar" id="profAvatarLg" style="width:72px;height:72px;font-size:26px">DG</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <h2 id="profFullName" style="font-size:22px;font-weight:700">Loading...</h2>
+          <div id="profRoleDept" style="color:var(--muted);font-size:13.5px;margin-top:2px">Employee</div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <span class="tag green" id="profStatus">Active</span>
+            <span class="tag" id="profEmpCode">EMP---</span>
+            <span style="font-size:12px;color:var(--muted)" id="profJoining">Joined: -</span>
+          </div>
+        </div>
+        <div>
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none" />
+          <button class="btn sm" onclick="document.getElementById('avatarFileInput').click()">📷 Change Photo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Personal Information -->
+      <div class="box">
+        <div class="box-head"><h3>👤 Personal Details</h3></div>
+        <div class="info-grid">
+          <div><span style="color:var(--muted);display:block">Date of Birth</span><b id="profDob">-</b></div>
+          <div><span style="color:var(--muted);display:block">Gender</span><b id="profGender">-</b></div>
+          <div><span style="color:var(--muted);display:block">Marital Status</span><b id="profMarital">-</b></div>
+          <div><span style="color:var(--muted);display:block">Blood Group</span><b id="profBlood">-</b></div>
+          <div><span style="color:var(--muted);display:block">Reporting Manager</span><b id="profManager">-</b></div>
+          <div><span style="color:var(--muted);display:block">Work Email</span><b id="profEmail">-</b></div>
+        </div>
+      </div>
+
+      <!-- Emergency & Contact -->
+      <div class="box">
+        <div class="box-head">
+          <h3>📞 Emergency Contact & Address</h3>
+          <button class="btn sm" onclick="openContactModal()">✎ Edit</button>
+        </div>
+        <div class="info-grid">
+          <div><span style="color:var(--muted);display:block">Mobile Phone</span><b id="profPhone">-</b></div>
+          <div><span style="color:var(--muted);display:block">Emergency Contact</span><b id="profEmgName">-</b></div>
+          <div><span style="color:var(--muted);display:block">Relationship</span><b id="profEmgRel">-</b></div>
+          <div><span style="color:var(--muted);display:block">Emergency Phone</span><b id="profEmgPhone">-</b></div>
+          <div style="grid-column:1/-1"><span style="color:var(--muted);display:block">Current Address</span><b id="profCurrAddr">-</b></div>
+          <div style="grid-column:1/-1"><span style="color:var(--muted);display:block">Permanent Address</span><b id="profPermAddr">-</b></div>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="box">
+        <div class="box-head"><h3>🏦 Bank Details</h3></div>
+        <div class="info-grid">
+          <div><span style="color:var(--muted);display:block">Bank Name</span><b id="profBank">-</b></div>
+          <div><span style="color:var(--muted);display:block">Account Holder</span><b id="profAccHolder">-</b></div>
+          <div><span style="color:var(--muted);display:block">Account Number</span><b id="profAccNum">-</b></div>
+          <div><span style="color:var(--muted);display:block">IFSC Code</span><b id="profIfsc">-</b></div>
+        </div>
+      </div>
+
+      <!-- Documents Uploaded -->
+      <div class="box">
+        <div class="box-head"><h3>📁 Uploaded Documents</h3></div>
+        <div id="profDocsList" style="font-size:13px;color:var(--muted)">Loading documents...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 3: ATTENDANCE & CHECK-IN ==================== -->
+  <section class="tab-content" id="tab_attendance">
+    <div class="box-head">
+      <div>
+        <h2 style="font-size:20px;font-weight:700">Attendance & Timesheet</h2>
+        <p style="color:var(--muted);font-size:13px">Review your daily punch logs, work hours, and monthly attendance history</p>
+      </div>
+      <div>
+        <input type="month" id="attMonthFilter" style="width:180px" />
+      </div>
+    </div>
+
+    <!-- Monthly Summary -->
+    <div class="grid-4" style="margin-bottom:20px">
+      <div class="stat-pill"><div class="l">Present Days</div><div class="v green" id="att_pres_sum">-</div></div>
+      <div class="stat-pill"><div class="l">Absent Days</div><div class="v" style="color:var(--red)" id="att_abs_sum">-</div></div>
+      <div class="stat-pill"><div class="l">Half Days</div><div class="v amber" id="att_half_sum">-</div></div>
+      <div class="stat-pill"><div class="l">Attendance Rate</div><div class="v green" id="att_rate_sum">-%</div></div>
+    </div>
+
+    <div class="box" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Check-in</th>
+              <th>Check-out</th>
+              <th>Total Hours</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="attHistoryTbody">
+            <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Loading attendance history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 4: LEAVES & BALANCE ==================== -->
+  <section class="tab-content" id="tab_leaves">
+    <div class="box-head">
+      <div>
+        <h2 style="font-size:20px;font-weight:700">Leave Management</h2>
+        <p style="color:var(--muted);font-size:13px">Check your available leave balances and submit leave requests</p>
+      </div>
+      <button class="btn primary" onclick="openLeaveModal()">+ Apply for Leave</button>
+    </div>
+
+    <!-- 3 Leave Balance Cards -->
+    <div class="grid-3" id="leaveBalanceCards" style="margin-bottom:22px">
+      <div class="stat-pill">
+        <div class="l">Casual Leave</div>
+        <div class="v" id="cl_bal">- <small style="font-size:12px;color:var(--muted)">Available</small></div>
+      </div>
+      <div class="stat-pill">
+        <div class="l">Sick Leave</div>
+        <div class="v green" id="sl_bal">- <small style="font-size:12px;color:var(--muted)">Available</small></div>
+      </div>
+      <div class="stat-pill">
+        <div class="l">Paid / Privilege Leave</div>
+        <div class="v amber" id="pl_bal">- <small style="font-size:12px;color:var(--muted)">Available</small></div>
+      </div>
+    </div>
+
+    <!-- Leaves History Table -->
+    <div class="box" style="padding:0;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px">
+        My Leave Applications History
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Applied Date</th>
+              <th>Leave Type</th>
+              <th>Period</th>
+              <th>Days</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Admin Remark</th>
+            </tr>
+          </thead>
+          <tbody id="leavesHistoryTbody">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading leave history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 5: MY PAYSLIPS ==================== -->
+  <section class="tab-content" id="tab_payslips">
+    <div class="box-head">
+      <div>
+        <h2 style="font-size:20px;font-weight:700">My Salary Payslips</h2>
+        <p style="color:var(--muted);font-size:13px">Download monthly payslips and inspect transparent earnings & deduction details</p>
+      </div>
+    </div>
+
+    <div class="box" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Gross Salary</th>
+              <th>Deductions</th>
+              <th>Net Take-Home Pay</th>
+              <th>Status</th>
+              <th>Payment Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payslipsTbody">
+            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">Loading payslips...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Modal: Apply Leave -->
+<div class="overlay" id="leaveModalOverlay">
+  <div class="modal">
+    <div class="m-head">
+      <h3>Apply for Leave</h3>
+      <button class="x" onclick="closeLeaveModal()">×</button>
+    </div>
+    <form id="leaveForm">
+      <div class="m-body">
+        <div class="field">
+          <label>Leave Type *</label>
+          <select id="l_type" required>
+            <option value="Casual Leave">Casual Leave</option>
+            <option value="Sick Leave">Sick Leave</option>
+            <option value="Paid / Privilege Leave">Paid / Privilege Leave</option>
+            <option value="Maternity / Paternity Leave">Maternity / Paternity Leave</option>
+            <option value="Unpaid Leave">Unpaid Leave</option>
+          </select>
+        </div>
+        <div class="form-row-2">
+          <div class="field">
+            <label>Start Date *</label>
+            <input type="date" id="l_start" required />
+          </div>
+          <div class="field">
+            <label>End Date *</label>
+            <input type="date" id="l_end" required />
+          </div>
+        </div>
+        <div class="field">
+          <label>Total Duration</label>
+          <input type="text" id="l_days_display" value="1 day(s)" disabled style="background:var(--soft);color:var(--text)" />
+        </div>
+        <div class="field">
+          <label>Reason *</label>
+          <textarea id="l_reason" rows="3" placeholder="Provide a reason for your leave request..." required></textarea>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn" onclick="closeLeaveModal()">Cancel</button>
+        <button type="submit" class="btn primary" id="btnSubmitLeave">Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Edit Profile Contact Details -->
+<div class="overlay" id="contactModalOverlay">
+  <div class="modal">
+    <div class="m-head">
+      <h3>Edit Contact & Address Details</h3>
+      <button class="x" onclick="closeContactModal()">×</button>
+    </div>
+    <form id="contactForm">
+      <div class="m-body">
+        <div class="field">
+          <label>Phone Number *</label>
+          <input type="tel" id="c_phone" maxlength="10" required />
+        </div>
+        <div class="form-row-2">
+          <div class="field">
+            <label>Emergency Contact Name</label>
+            <input type="text" id="c_emg_name" />
+          </div>
+          <div class="field">
+            <label>Relation</label>
+            <input type="text" id="c_emg_rel" placeholder="Father, Spouse, etc." />
+          </div>
+        </div>
+        <div class="field">
+          <label>Emergency Contact Phone</label>
+          <input type="tel" id="c_emg_phone" maxlength="10" />
+        </div>
+        <div class="field">
+          <label>Current Residential Address</label>
+          <textarea id="c_curr_addr" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label>Permanent Address</label>
+          <textarea id="c_perm_addr" rows="2"></textarea>
+        </div>
+        <div class="form-row-3">
+          <div class="field"><label>City</label><input type="text" id="c_city" /></div>
+          <div class="field"><label>State</label><input type="text" id="c_state" /></div>
+          <div class="field"><label>Pincode</label><input type="text" id="c_pincode" /></div>
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn" onclick="closeContactModal()">Cancel</button>
+        <button type="submit" class="btn primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Change Password -->
+<div class="overlay" id="pwdModalOverlay">
+  <div class="modal" style="max-width:420px">
+    <div class="m-head">
+      <h3>Change Password</h3>
+      <button class="x" onclick="closeChangePwdModal()">×</button>
+    </div>
+    <form id="pwdForm">
+      <div class="m-body">
+        <div class="field">
+          <label>Current Password *</label>
+          <input type="password" id="p_current" required />
+        </div>
+        <div class="field">
+          <label>New Password *</label>
+          <input type="password" id="p_new" minlength="6" placeholder="Min 6 characters" required />
+        </div>
+      </div>
+      <div class="m-foot">
+        <button type="button" class="btn" onclick="closeChangePwdModal()">Cancel</button>
+        <button type="submit" class="btn primary">Update Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Payslip Breakdown View -->
+<div class="overlay" id="payslipModalOverlay">
+  <div class="modal" style="max-width:600px">
+    <div class="m-head">
+      <h3 id="psModalTitle">Payslip Breakdown</h3>
+      <button class="x" onclick="closePayslipModal()">×</button>
+    </div>
+    <div class="m-body" id="psModalContent">
+      Loading payslip...
+    </div>
+    <div class="m-foot">
+      <button type="button" class="btn" onclick="closePayslipModal()">Close</button>
+      <button type="button" class="btn primary" id="btnDownloadCurrentPdf">📥 Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// Authentication helper
+const token = localStorage.getItem('auth_token');
+if (!token) {
+  window.location.href = '/login';
+}
+
+async function portalApi(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  opts.headers['Authorization'] = 'Bearer ' + token;
+  if (opts.body && typeof opts.body === 'object') {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(url, opts);
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+    return;
+  }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'API request failed.');
+  return data;
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type + ' show';
+  setTimeout(() => t.className = '', 3200);
+}
+
+const money = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Theme
+const savedTheme = localStorage.getItem('edm_theme') || 'light';
+document.documentElement.dataset.theme = savedTheme;
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme;
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('edm_theme', next);
+});
+
+// Dropdowns toggle
+document.getElementById('userPill').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('userMenu').classList.toggle('open');
+  document.getElementById('notifMenu').classList.remove('open');
+});
+document.getElementById('notifBell').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('notifMenu').classList.toggle('open');
+  document.getElementById('userMenu').classList.remove('open');
+});
+document.addEventListener('click', () => {
+  document.getElementById('userMenu')?.classList.remove('open');
+  document.getElementById('notifMenu')?.classList.remove('open');
+});
+
+// Navigation Tabs
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+function switchTab(tabKey) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabKey));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab_' + tabKey));
+
+  if (tabKey === 'overview') loadSummary();
+  else if (tabKey === 'profile') loadProfile();
+  else if (tabKey === 'attendance') loadAttendanceTab();
+  else if (tabKey === 'leaves') loadLeavesTab();
+  else if (tabKey === 'payslips') loadPayslipsTab();
+}
+
+// Live Digital Clock
+function updateClocks() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const cTop = document.getElementById('topClock');
+  if (cTop) cTop.textContent = timeStr;
+
+  const cPunch = document.getElementById('punchLiveClock');
+  if (cPunch) cPunch.textContent = timeStr;
+
+  const dPunch = document.getElementById('punchLiveDate');
+  if (dPunch) dPunch.textContent = dateStr;
+}
+setInterval(updateClocks, 1000);
+updateClocks();
+
+let currentEmployee = null;
+let currentSummary = null;
+
+// Load Summary
+async function loadSummary() {
+  try {
+    const data = await portalApi('/api/portal/summary');
+    currentSummary = data;
+    currentEmployee = data.employee;
+
+    // Header info
+    document.getElementById('userName').textContent = data.employee.full_name;
+    document.getElementById('userDeptRole').textContent = `${data.employee.designation} · ${data.employee.department}`;
+    const avatarEl = document.getElementById('userAvatar');
+    if (data.employee.avatar) {
+      avatarEl.innerHTML = `<img src="${data.employee.avatar}" alt="${data.employee.full_name}" />`;
+    } else {
+      avatarEl.textContent = (data.employee.full_name || 'U').slice(0, 2).toUpperCase();
+    }
+
+    // Role badge & Admin switch
+    const curUser = JSON.parse(localStorage.getItem('current_user') || '{}');
+    if (curUser.role === 'admin' || curUser.role === 'hr') {
+      document.getElementById('userRoleBadge').textContent = curUser.role.toUpperCase();
+      document.getElementById('adminSwitchWrap').style.display = 'block';
+    }
+
+    // Greeting
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+    document.getElementById('welcomeGreeting').textContent = `${greet}, ${data.employee.full_name}! 👋`;
+    document.getElementById('welcomeDateSub').textContent = `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}. Have a great and productive day!`;
+
+    // Punch Status
+    const pStatus = data.today;
+    const badge = document.getElementById('punchBadge');
+    const msg = document.getElementById('punchDetailMsg');
+    const inBtn = document.getElementById('btnCheckIn');
+    const outBtn = document.getElementById('btnCheckOut');
+
+    if (pStatus.isCheckedIn && !pStatus.isCheckedOut) {
+      badge.textContent = 'Clocked In';
+      badge.className = 'tag green';
+      msg.textContent = `Punch In: ${pStatus.checkInTime}`;
+      inBtn.style.display = 'none';
+      outBtn.style.display = 'inline-flex';
+    } else if (pStatus.isCheckedIn && pStatus.isCheckedOut) {
+      badge.textContent = 'Clocked Out';
+      badge.className = 'tag';
+      msg.textContent = `Total Work Hours: ${pStatus.workHours || '8'} hrs (Out: ${pStatus.checkOutTime})`;
+      inBtn.style.display = 'none';
+      outBtn.style.display = 'none';
+    } else {
+      badge.textContent = 'Not Checked In';
+      badge.className = 'tag warn';
+      msg.textContent = 'You have not checked in yet today.';
+      inBtn.style.display = 'inline-flex';
+      outBtn.style.display = 'none';
+    }
+
+    // KPI Counters
+    document.getElementById('ov_leave_bal').innerHTML = `${data.leaveBalance.remaining} <small style="font-size:13px;color:var(--muted)">Days</small>`;
+    document.getElementById('ov_att_rate').textContent = `${data.monthlyAttendance.attendanceRate}%`;
+    document.getElementById('ov_pres_days').textContent = data.monthlyAttendance.present;
+    document.getElementById('ov_latest_pay').textContent = data.latestPayslip ? money(data.latestPayslip.net_salary) : '₹0';
+
+    // Recent Leaves
+    const leavesBox = document.getElementById('ov_recent_leaves');
+    if (data.leaveBalance.pending > 0) {
+      leavesBox.innerHTML = `<div style="background:var(--soft);padding:10px 12px;border-radius:10px">
+        <b>You have ${data.leaveBalance.pending} pending leave request(s).</b>
+        <div style="margin-top:4px;color:var(--muted)">Awaiting manager approval.</div>
+      </div>`;
+    } else {
+      leavesBox.innerHTML = `<div>All clear! No pending leave requests right now.</div>`;
+    }
+
+    // Latest Payslip
+    const payBox = document.getElementById('ov_latest_payslip_box');
+    if (data.latestPayslip) {
+      payBox.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--soft);padding:10px 12px;border-radius:10px">
+          <div>
+            <b>Month: ${data.latestPayslip.month}</b>
+            <div style="color:var(--muted)">Net: ${money(data.latestPayslip.net_salary)} (${data.latestPayslip.status})</div>
+          </div>
+          <button class="btn sm primary" onclick="downloadSinglePayslipPdf('${data.latestPayslip.month}')">📥 PDF</button>
+        </div>`;
+    } else {
+      payBox.textContent = 'No payslips generated yet for this account.';
+    }
+
+    // Notifications Badge
+    const notifBadge = document.getElementById('notifBadge');
+    if (data.unreadNotifications > 0) {
+      notifBadge.textContent = data.unreadNotifications;
+      notifBadge.style.display = 'inline-block';
+    } else {
+      notifBadge.style.display = 'none';
+    }
+
+    loadNotificationsList();
+
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Check-in action
+async function handleCheckIn() {
+  try {
+    const res = await portalApi('/api/portal/check-in', { method: 'POST' });
+    toast(res.message, 'ok');
+    loadSummary();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Check-out action
+async function handleCheckOut() {
+  if (!confirm('Are you ready to clock out for today?')) return;
+  try {
+    const res = await portalApi('/api/portal/check-out', { method: 'POST' });
+    toast(res.message, 'ok');
+    loadSummary();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// ==================== TAB 2: PROFILE ====================
+async function loadProfile() {
+  try {
+    const data = await portalApi('/api/portal/profile');
+    const emp = data.employee;
+    currentEmployee = emp;
+
+    document.getElementById('profFullName').textContent = emp.full_name;
+    document.getElementById('profRoleDept').textContent = `${emp.designation} · ${emp.department}`;
+    document.getElementById('profStatus').textContent = emp.status || 'Active';
+    document.getElementById('profEmpCode').textContent = emp.emp_code;
+    document.getElementById('profJoining').textContent = `Joined: ${emp.joining_date || '-'}`;
+
+    const profAv = document.getElementById('profAvatarLg');
+    if (emp.avatar) {
+      profAv.innerHTML = `<img src="${emp.avatar}" alt="${emp.full_name}" />`;
+    } else {
+      profAv.textContent = (emp.full_name || 'U').slice(0, 2).toUpperCase();
+    }
+
+    document.getElementById('profDob').textContent = emp.dob || '-';
+    document.getElementById('profGender').textContent = emp.gender || '-';
+    document.getElementById('profMarital').textContent = emp.marital_status || '-';
+    document.getElementById('profBlood').textContent = emp.blood_group || '-';
+    document.getElementById('profManager').textContent = emp.manager_name ? `${emp.manager_name} (${emp.manager_code})` : 'Top Level / No Manager';
+    document.getElementById('profEmail').textContent = emp.email || '-';
+
+    document.getElementById('profPhone').textContent = emp.phone || '-';
+    document.getElementById('profEmgName').textContent = emp.emergency_contact_name || '-';
+    document.getElementById('profEmgRel').textContent = emp.emergency_contact_relation || '-';
+    document.getElementById('profEmgPhone').textContent = emp.emergency_contact_phone || '-';
+    document.getElementById('profCurrAddr').textContent = emp.current_address ? `${emp.current_address}, ${emp.city || ''} ${emp.state || ''}` : '-';
+    document.getElementById('profPermAddr').textContent = emp.permanent_address || '-';
+
+    document.getElementById('profBank').textContent = emp.bank_name || '-';
+    document.getElementById('profAccHolder').textContent = emp.account_holder || '-';
+    const acc = emp.account_number || '';
+    document.getElementById('profAccNum').textContent = acc ? ('••••••••' + acc.slice(-4)) : '-';
+    document.getElementById('profIfsc').textContent = emp.ifsc_code || '-';
+
+    // Documents
+    const docsList = document.getElementById('profDocsList');
+    if (data.documents && data.documents.length) {
+      docsList.innerHTML = data.documents.map(d => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+          <div>
+            <b>${esc(d.doc_type)}</b>
+            <div style="font-size:11px;color:var(--muted)">${esc(d.file_name)} (${Math.round((d.file_size||0)/1024)} KB)</div>
+          </div>
+          <a href="${esc(d.file_url)}" target="_blank" class="btn sm" download>📥 Download</a>
+        </div>
+      `).join('');
+    } else {
+      docsList.textContent = 'No documents uploaded yet.';
+    }
+
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Avatar upload
+document.getElementById('avatarFileInput').addEventListener('change', async ev => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return toast('Select a valid image', 'bad');
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const res = await portalApi('/api/portal/avatar', {
+        method: 'POST',
+        body: { avatar: reader.result }
+      });
+      toast(res.message, 'ok');
+      loadProfile();
+      loadSummary();
+    } catch (err) {
+      toast(err.message, 'bad');
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// Edit Contact Modal
+function openContactModal() {
+  if (!currentEmployee) return;
+  document.getElementById('c_phone').value = currentEmployee.phone || '';
+  document.getElementById('c_emg_name').value = currentEmployee.emergency_contact_name || '';
+  document.getElementById('c_emg_rel').value = currentEmployee.emergency_contact_relation || '';
+  document.getElementById('c_emg_phone').value = currentEmployee.emergency_contact_phone || '';
+  document.getElementById('c_curr_addr').value = currentEmployee.current_address || '';
+  document.getElementById('c_perm_addr').value = currentEmployee.permanent_address || '';
+  document.getElementById('c_city').value = currentEmployee.city || '';
+  document.getElementById('c_state').value = currentEmployee.state || '';
+  document.getElementById('c_pincode').value = currentEmployee.pincode || '';
+  document.getElementById('contactModalOverlay').classList.add('open');
+}
+function closeContactModal() { document.getElementById('contactModalOverlay').classList.remove('open'); }
+
+document.getElementById('contactForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const body = {
+      phone: document.getElementById('c_phone').value,
+      emergency_contact_name: document.getElementById('c_emg_name').value,
+      emergency_contact_relation: document.getElementById('c_emg_rel').value,
+      emergency_contact_phone: document.getElementById('c_emg_phone').value,
+      current_address: document.getElementById('c_curr_addr').value,
+      permanent_address: document.getElementById('c_perm_addr').value,
+      city: document.getElementById('c_city').value,
+      state: document.getElementById('c_state').value,
+      pincode: document.getElementById('c_pincode').value
+    };
+    const res = await portalApi('/api/portal/profile', { method: 'PUT', body });
+    toast(res.message, 'ok');
+    closeContactModal();
+    loadProfile();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+});
+
+// ==================== TAB 3: ATTENDANCE TAB ====================
+async function loadAttendanceTab() {
+  const mInput = document.getElementById('attMonthFilter');
+  if (!mInput.value) mInput.value = new Date().toISOString().slice(0, 7);
+
+  try {
+    const data = await portalApi(`/api/portal/attendance?month=${mInput.value}`);
+    const list = data.records || [];
+
+    let p = 0, a = 0, h = 0;
+    list.forEach(r => {
+      if (r.status === 'Present') p++;
+      else if (r.status === 'Absent') a++;
+      else if (r.status === 'Half Day') h++;
+    });
+
+    document.getElementById('att_pres_sum').textContent = p;
+    document.getElementById('att_abs_sum').textContent = a;
+    document.getElementById('att_half_sum').textContent = h;
+    const totalWorking = list.length || 1;
+    document.getElementById('att_rate_sum').textContent = `${Math.min(100, Math.round(((p + h*0.5) / totalWorking) * 100))}%`;
+
+    const tbody = document.getElementById('attHistoryTbody');
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">No attendance records found for this month.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(r => `
+      <tr>
+        <td><b>${r.date}</b></td>
+        <td><span class="tag ${r.status === 'Present' ? 'green' : (r.status === 'Half Day' ? 'warn' : 'bad')}">${r.status}</span></td>
+        <td>${r.check_in_time || '-'}</td>
+        <td>${r.check_out_time || '-'}</td>
+        <td>${r.work_hours ? `${r.work_hours} hrs` : '-'}</td>
+        <td style="color:var(--muted)">${esc(r.notes || '-')}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+document.getElementById('attMonthFilter').addEventListener('change', loadAttendanceTab);
+
+// ==================== TAB 4: LEAVES TAB ====================
+async function loadLeavesTab() {
+  try {
+    const data = await portalApi('/api/portal/leaves');
+    const b = data.balance;
+
+    document.getElementById('cl_bal').innerHTML = `${b.breakdown[0].remaining} <small style="font-size:12px;color:var(--muted)">/ ${b.breakdown[0].total} Days</small>`;
+    document.getElementById('sl_bal').innerHTML = `${b.breakdown[1].remaining} <small style="font-size:12px;color:var(--muted)">/ ${b.breakdown[1].total} Days</small>`;
+    document.getElementById('pl_bal').innerHTML = `${b.breakdown[2].remaining} <small style="font-size:12px;color:var(--muted)">/ ${b.breakdown[2].total} Days</small>`;
+
+    const tbody = document.getElementById('leavesHistoryTbody');
+    const list = data.applications || [];
+
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No leave applications submitted yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(l => `
+      <tr>
+        <td>${String(l.created_at).slice(0, 10)}</td>
+        <td><b>${esc(l.leave_type)}</b></td>
+        <td>${l.start_date} &nbsp;to&nbsp; ${l.end_date}</td>
+        <td><b>${l.days} day(s)</b></td>
+        <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis">${esc(l.reason)}</td>
+        <td>
+          <span class="tag ${l.status === 'Approved' ? 'green' : (l.status === 'Pending' ? 'warn' : 'bad')}">${l.status}</span>
+        </td>
+        <td style="color:var(--muted)">${esc(l.admin_remark || '-')}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Apply Leave Modal
+function openLeaveModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('l_start').value = today;
+  document.getElementById('l_end').value = today;
+  document.getElementById('l_days_display').value = '1 day(s)';
+  document.getElementById('l_reason').value = '';
+  document.getElementById('leaveModalOverlay').classList.add('open');
+}
+function closeLeaveModal() { document.getElementById('leaveModalOverlay').classList.remove('open'); }
+
+function recalcDays() {
+  const s = new Date(document.getElementById('l_start').value);
+  const e = new Date(document.getElementById('l_end').value);
+  if (!isNaN(s) && !isNaN(e) && e >= s) {
+    const diff = Math.round((e - s) / 864e5) + 1;
+    document.getElementById('l_days_display').value = `${diff} day(s)`;
+  }
+}
+document.getElementById('l_start').addEventListener('change', recalcDays);
+document.getElementById('l_end').addEventListener('change', recalcDays);
+
+document.getElementById('leaveForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmitLeave');
+  btn.disabled = true;
+  try {
+    const body = {
+      leave_type: document.getElementById('l_type').value,
+      start_date: document.getElementById('l_start').value,
+      end_date: document.getElementById('l_end').value,
+      reason: document.getElementById('l_reason').value
+    };
+    const res = await portalApi('/api/portal/leaves', { method: 'POST', body });
+    toast(res.message, 'ok');
+    closeLeaveModal();
+    loadLeavesTab();
+    loadSummary();
+  } catch (err) {
+    toast(err.message, 'bad');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ==================== TAB 5: PAYSLIPS TAB ====================
+async function loadPayslipsTab() {
+  try {
+    const data = await portalApi('/api/portal/payslips');
+    const list = data.payslips || [];
+    const tbody = document.getElementById('payslipsTbody');
+
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No payslips available yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(p => {
+      const totDeductions = (Number(p.pf_deduction)||0) + (Number(p.tax_deduction)||0) + (Number(p.lop_deduction)||0);
+      return `
+        <tr>
+          <td><b>${p.month}</b></td>
+          <td>${money(p.gross_salary)}</td>
+          <td style="color:var(--red)">-${money(totDeductions)}</td>
+          <td><b style="color:var(--green);font-size:14px">${money(p.net_salary)}</b></td>
+          <td><span class="tag green">${p.status}</span></td>
+          <td>${p.payment_date || '-'}</td>
+          <td>
+            <div style="display:flex;gap:6px">
+              <button class="btn sm" onclick="viewPayslipBreakdown('${p.month}')">👁️ View</button>
+              <button class="btn sm primary" onclick="downloadSinglePayslipPdf('${p.month}')">📥 PDF</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// View Payslip Modal
+let currentViewingMonth = null;
+async function viewPayslipBreakdown(month) {
+  try {
+    currentViewingMonth = month;
+    const res = await portalApi(`/api/portal/payslips/${month}`);
+    const p = res.payslip;
+    document.getElementById('psModalTitle').textContent = `Payslip for ${month}`;
+
+    const totDeductions = (Number(p.pf_deduction)||0) + (Number(p.tax_deduction)||0) + (Number(p.lop_deduction)||0);
+
+    document.getElementById('psModalContent').innerHTML = `
+      <div style="background:var(--soft);padding:14px;border-radius:12px;margin-bottom:16px;display:flex;justify-content:space-between">
+        <div>
+          <b>${esc(p.full_name)} (${esc(p.emp_code)})</b>
+          <div style="color:var(--muted);font-size:12px">${esc(p.designation)} · ${esc(p.department)}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--muted)">Net Take-Home</div>
+          <b style="font-size:18px;color:var(--green)">${money(p.net_salary)}</b>
+        </div>
+      </div>
+      <div class="form-row-2 payslip-breakdown-row">
+        <div class="payslip-col-border" style="border-right:1px solid var(--line);padding-right:10px">
+          <div style="font-weight:700;color:var(--primary);margin-bottom:8px">EARNINGS</div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Basic Salary (50%)</span><b>${money(p.basic)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>HRA (25%)</span><b>${money(p.hra)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Allowances</span><b>${money(p.allowances)}</b></div>
+          <div style="border-top:1px dashed var(--line);margin:6px 0"></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-weight:700"><span>Gross Salary</span><b>${money(p.gross_salary)}</b></div>
+        </div>
+        <div>
+          <div style="font-weight:700;color:var(--red);margin-bottom:8px">DEDUCTIONS</div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Provident Fund (PF)</span><b>${money(p.pf_deduction)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Income Tax (TDS)</span><b>${money(p.tax_deduction)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>LOP (Unpaid Leave)</span><b>${money(p.lop_deduction)}</b></div>
+          <div style="border-top:1px dashed var(--line);margin:6px 0"></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;font-weight:700"><span>Total Deductions</span><b style="color:var(--red)">${money(totDeductions)}</b></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btnDownloadCurrentPdf').onclick = () => downloadSinglePayslipPdf(month);
+    document.getElementById('payslipModalOverlay').classList.add('open');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+function closePayslipModal() { document.getElementById('payslipModalOverlay').classList.remove('open'); }
+
+// Download Payslip PDF directly from browser using jsPDF
+async function downloadSinglePayslipPdf(month) {
+  try {
+    toast('Generating payslip PDF...', 'ok');
+    const res = await portalApi(`/api/portal/payslips/${month}`);
+    const p = res.payslip;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    // Corporate Header
+    doc.setFillColor(31, 95, 214);
+    doc.rect(0, 0, 210, 28, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYSLIP / SALARY STATEMENT', 14, 16);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Month: ${p.month} | Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 23);
+
+    // Employee & Company Details
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EMPLOYEE DETAILS', 14, 38);
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Employee ID: ${p.emp_code}`, 14, 45);
+    doc.text(`Full Name: ${p.full_name}`, 14, 51);
+    doc.text(`Designation: ${p.designation}`, 14, 57);
+    doc.text(`Department: ${p.department}`, 14, 63);
+
+    doc.text(`Bank Name: ${p.bank_name || 'HDFC Bank'}`, 110, 45);
+    doc.text(`Account No: ${p.account_number ? '••••' + p.account_number.slice(-4) : '••••5678'}`, 110, 51);
+    doc.text(`IFSC Code: ${p.ifsc_code || 'HDFC0001234'}`, 110, 57);
+    doc.text(`Status: Paid`, 110, 63);
+
+    // Earnings & Deductions Table
+    const totDeductions = (Number(p.pf_deduction)||0) + (Number(p.tax_deduction)||0) + (Number(p.lop_deduction)||0);
+
+    doc.autoTable({
+      startY: 72,
+      head: [['Earnings', 'Amount (₹)', 'Deductions', 'Amount (₹)']],
+      body: [
+        ['Basic Salary (50%)', Number(p.basic).toLocaleString('en-IN'), 'Provident Fund (PF)', Number(p.pf_deduction).toLocaleString('en-IN')],
+        ['House Rent Allowance (HRA)', Number(p.hra).toLocaleString('en-IN'), 'Income Tax (TDS)', Number(p.tax_deduction).toLocaleString('en-IN')],
+        ['Special Allowance', Number(p.allowances).toLocaleString('en-IN'), 'Loss of Pay (LOP)', Number(p.lop_deduction).toLocaleString('en-IN')],
+        ['', '', '', ''],
+        ['Gross Earnings', '₹' + Number(p.gross_salary).toLocaleString('en-IN'), 'Total Deductions', '₹' + Number(totDeductions).toLocaleString('en-IN')]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [31, 95, 214], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9.5, cellPadding: 4 }
+    });
+
+    // Net Pay Callout
+    const finalY = doc.lastAutoTable.finalY + 12;
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(14, finalY, 182, 20, 3, 3, 'F');
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text('NET SALARY PAYABLE:', 22, finalY + 13);
+    doc.setTextColor(22, 163, 74);
+    doc.setFontSize(16);
+    doc.text(`₹${Number(p.net_salary).toLocaleString('en-IN')}`, 130, finalY + 13);
+
+    // Footer note
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(148, 163, 184);
+    doc.text('This is a system generated payslip and does not require a physical signature.', 14, 280);
+
+    doc.save(`Payslip_${p.emp_code}_${p.month}.pdf`);
+    toast('Payslip downloaded successfully!', 'ok');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// ==================== NOTIFICATIONS ====================
+async function loadNotificationsList() {
+  try {
+    const data = await portalApi('/api/portal/notifications');
+    const list = data.notifications || [];
+    const container = document.getElementById('notifList');
+
+    if (!list.length) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No notifications</div>';
+      return;
+    }
+
+    container.innerHTML = list.map(n => `
+      <div style="padding:9px 10px;border-radius:8px;margin-bottom:4px;background:${n.is_read ? 'transparent' : 'var(--soft)'};border-left:${n.is_read ? 'none' : '3px solid var(--primary)'}">
+        <div style="font-weight:700;font-size:12px;color:var(--text)">${esc(n.title)}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(n.message)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${String(n.created_at).slice(0, 16).replace('T', ' ')}</div>
+      </div>
+    `).join('');
+  } catch (_) {}
+}
+
+async function markAllNotifsRead() {
+  try {
+    await portalApi('/api/portal/notifications/read-all', { method: 'PUT' });
+    document.getElementById('notifBadge').style.display = 'none';
+    loadNotificationsList();
+    toast('All marked as read');
+  } catch (_) {}
+}
+
+// Change Password Modal
+function openChangePwdModal() {
+  document.getElementById('p_current').value = '';
+  document.getElementById('p_new').value = '';
+  document.getElementById('pwdModalOverlay').classList.add('open');
+}
+function closeChangePwdModal() { document.getElementById('pwdModalOverlay').classList.remove('open'); }
+
+document.getElementById('pwdForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const currentPassword = document.getElementById('p_current').value;
+    const newPassword = document.getElementById('p_new').value;
+    const res = await portalApi('/api/auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword }
+    });
+    toast(res.message, 'ok');
+    closeChangePwdModal();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+});
+
+// Logout
+function logout() {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('current_user');
+  fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
+    window.location.href = '/login';
+  });
+}
+
+// Initialize
+loadSummary();
+</script>
+</body>
+</html>
+

@@ -125,16 +125,29 @@ npm start
 
 Open **http://localhost:3000** in your browser.
 
-> **Note**: Database (`employee_manager`) and all tables (`employees`, `attendance`, `leaves`) are created **automatically** on first server launch.
+> **Note**: Database (`employee_manager`), tables (`employees`, `attendance`, `leaves`, `payroll`, `users`, `notifications`), and demo accounts are created **automatically** on first server launch.
+
+---
+
+## 🔐 Login Credentials & Demo Accounts
+
+| Role | Email | Password | Access / Capabilities |
+| :--- | :--- | :--- | :--- |
+| 🛡️ **Admin** | `admin@company.com` | `Admin@123` | Full Access: Dashboard, Attendance, Leaves, Payroll, Org Chart, Reports, ESS Portal Preview |
+| 👔 **HR Manager** | `hr@company.com` | `Hr@123` | HR Access: Employee Management, Attendance Tracking, Leave Approvals, Payroll Run |
+| 👤 **Employee** | `salu@gmal.com` *(or any employee email)* | `Emp@123` | **Employee Self-Service Portal**: My Profile, Web Punch-In/Out, Apply Leaves, My Payslips, Notifications |
 
 ---
 
 ## 📂 Pages & Routes
 
+- `/login` — Modern authentication gateway with 1-click demo logins and theme switcher
+- `/portal` — **Employee Self-Service (ESS) Portal** (Profile, Punch-In/Out, Leaves, Payslips, Notifications)
 - `/dashboard` — Main employee dashboard with list, search, details, analytics, and widgets
 - `/attendance` — Daily attendance sheet and monthly attendance summary reports
 - `/leaves` — Leave application portal and approval management
 - `/payroll` — Payroll processing, salary structures, payslip PDF generation, and email disbursal
+- `/org-chart` — Interactive reporting hierarchy tree & org structure
 - `/report` — Comprehensive employee report with Excel, PDF, CSV export, and department analytics
 
 ---
@@ -143,19 +156,22 @@ Open **http://localhost:3000** in your browser.
 
 ```
 employee-data-manager/
-├── server.js              # Application entry point & route definitions
+├── server.js              # Application entry point, JWT auth middleware & route guards
 ├── config/
-│   └── db.js              # MySQL connection pool & automatic table migrations
+│   └── db.js              # MySQL connection pool, auto-migrations & default accounts seeding
 ├── routes/
-│   ├── employees.js       # Employee CRUD, avatar upload, and stats
+│   ├── auth.js            # Login, logout, session check, and password reset endpoints
+│   ├── portal.js          # Employee Self-Service endpoints (profile, punch-in/out, leaves, payslips)
+│   ├── employees.js       # Employee CRUD, avatar upload, bulk import, and stats
 │   ├── attendance.js      # Daily & monthly attendance endpoints
 │   ├── leaves.js          # Leave application and approval endpoints
 │   └── payroll.js         # Payroll calculation, payslip PDF/email endpoints
 ├── utils/
+│   ├── auth.js            # PBKDF2 password hashing & HMAC-SHA256 JWT utilities
 │   ├── fileLogger.js      # Appends employee records to text file
 │   └── mailer.js          # Resilient email sender (SMTP or data/sent_emails.txt fallback)
 ├── database/
-│   └── schema.sql         # SQL schema definitions (employees, attendance, leaves, payroll)
+│   └── schema.sql         # SQL schema definitions (employees, attendance, leaves, payroll, users, notifications)
 ├── data/
 │   └── employees.txt      # Text file record storage
 ├── public/
@@ -165,11 +181,15 @@ employee-data-manager/
 │   │   ├── common.js      # API helpers, toast notifications
 │   │   └── export-helpers.js # Professional Excel, PDF, & Payslip generator
 │   └── uploads/
-│       └── avatars/       # Uploaded profile photos
+│       ├── avatars/       # Uploaded profile photos
+│       └── documents/     # Uploaded employee documents (Aadhaar, PAN, etc.)
 └── views/
+    ├── login.html         # Login gateway with 1-click demo fills
+    ├── portal.html        # Modern Employee Self-Service (ESS) SPA portal
     ├── dashboard.html     # Main dashboard (with charts & cards)
     ├── attendance.html    # Attendance tracking & monthly summary
     ├── leaves.html        # Leave management & approvals
     ├── payroll.html       # Monthly payroll & salary disbursal
+    ├── org-chart.html     # Visual Org Chart hierarchy
     └── report.html        # Employee report with Excel/PDF export
 ```

@@ -234,12 +234,14 @@ input:focus,select:focus{outline:none;border-color:var(--primary)}
 @media(max-width:860px){
   .app{display:block;min-height:100vh}
 
+  /* Sticky Top Horizontal Navigation on Mobile */
   .side{
     flex-direction:row;
     height:56px;
     width:100%;
-    padding:0 14px;
+    padding:0 10px;
     justify-content:flex-start;
+    align-items:center;
     position:sticky;
     top:0;
     z-index:50;
@@ -247,26 +249,40 @@ input:focus,select:focus{outline:none;border-color:var(--primary)}
     border-bottom:1px solid var(--line);
     background:var(--panel);
     gap:6px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    box-sizing:border-box;
+    white-space:nowrap;
   }
-  .logo{margin:0 8px 0 0;width:34px;height:34px;font-size:16px;border-radius:10px}
-  .nav{width:40px;height:40px;border-radius:10px}
-  .nav svg{width:20px;height:20px}
+  .side::-webkit-scrollbar{display:none}
+  .side .logo, .side .nav, .side button{flex-shrink:0}
+  .side .spacer{display:none}
+  .logo{margin:0 6px 0 0;width:34px;height:34px;font-size:16px;border-radius:10px}
+  .nav{width:38px;height:38px;border-radius:10px}
+  .nav svg{width:19px;height:19px}
   .nav[data-tip]:hover::after{display:none}
 
-  .main{padding:16px 14px 40px}
-  .top-bar{flex-direction:column;align-items:stretch;gap:14px;margin-bottom:18px}
+  .main{padding:14px 12px 40px}
+  .top-bar{flex-direction:column;align-items:stretch;gap:12px;margin-bottom:16px}
   .page-title h1{font-size:20px}
   
-  .controls-card{flex-direction:column;align-items:stretch;gap:10px}
+  .controls-card{flex-direction:column;align-items:stretch;gap:8px;padding:12px}
   .controls-card input, .controls-card select{width:100%}
   .controls-card .grow{display:none}
   .controls-card .btn-group{display:flex;width:100%;gap:6px}
   .controls-card .btn-group .btn{flex:1}
 
-  .chart-viewport{padding:24px 10px;min-height:450px}
-  .node-card{width:180px;padding:10px 12px}
-  .node-name{font-size:12.5px}
+  .chart-viewport{padding:20px 8px;min-height:420px;-webkit-overflow-scrolling:touch}
+  .node-card{width:170px;padding:10px 12px}
+  .node-name{font-size:12px}
   .node-role{font-size:11px}
+}
+
+@media(max-width:480px){
+  .page-title h1{font-size:18px}
+  .node-card{width:150px;padding:8px 10px}
 }
 </style>
 </head>
@@ -292,10 +308,16 @@ input:focus,select:focus{outline:none;border-color:var(--primary)}
     <a class="nav" data-tip="Employee Report" href="/report" aria-label="Report">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
     </a>
+    <a class="nav" data-tip="Employee Portal" href="/portal" aria-label="Portal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
     <div class="spacer"></div>
     <button class="nav" id="themeBtn" data-tip="Dark / Light mode" title="Toggle theme" aria-label="Theme">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
     </button>
+    <a class="nav" data-tip="Sign Out" href="/logout" aria-label="Logout" style="color:var(--red)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </a>
   </aside>
 
   <main class="main">

@@ -91,9 +91,12 @@ tr:hover td { background: #f8fafc; }
 #toast.bad { background: var(--danger); }
 
 @media (max-width: 640px) {
-  .navbar { padding: 0 14px; }
+  .navbar { padding: 10px 14px; flex-direction: column; height: auto; gap: 8px; }
+  .nav-links { overflow-x: auto; white-space: nowrap; width: 100%; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .nav-links::-webkit-scrollbar { display: none; }
   .nav-user span { display: none; }
-  .card { padding: 18px; }
+  .card { padding: 16px 14px; min-width: 0; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 @media print {
   .navbar, .toolbar, .actions, th:last-child, td:last-child { display: none !important; }

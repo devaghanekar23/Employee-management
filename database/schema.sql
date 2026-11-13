@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS attendance (
   employee_id INT NOT NULL,
   date DATE NOT NULL,
   status ENUM('Present', 'Absent', 'Half Day') NOT NULL DEFAULT 'Present',
+  check_in_time VARCHAR(20) DEFAULT NULL,
+  check_out_time VARCHAR(20) DEFAULT NULL,
+  work_hours DECIMAL(4,2) DEFAULT 0.00,
   notes VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_emp_date (employee_id, date),
@@ -97,5 +100,31 @@ CREATE TABLE IF NOT EXISTS payroll (
   payment_date DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_emp_month (employee_id, month),
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
+-- Users Table (RBAC: Admin, HR, Employee)
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  employee_id INT DEFAULT NULL,
+  username VARCHAR(80) NOT NULL UNIQUE,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  salt VARCHAR(64) NOT NULL,
+  role ENUM('admin', 'hr', 'employee') NOT NULL DEFAULT 'employee',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
+-- Notifications Table
+CREATE TABLE IF NOT EXISTS notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  employee_id INT NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(30) NOT NULL DEFAULT 'info',
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  link_url VARCHAR(255) DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );

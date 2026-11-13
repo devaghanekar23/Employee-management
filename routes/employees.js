@@ -290,7 +290,7 @@ router.post('/bulk-import', async (req, res) => {
           skipped++;
         }
       } else {
-        await Promise.all([
+        const [, dbRes] = await Promise.all([
           appendEmployeeToFile(empRecord),
           pool.query(`
             INSERT INTO employees
@@ -309,6 +309,23 @@ router.post('/bulk-import', async (req, res) => {
             empRecord.account_number, empRecord.ifsc_code, empRecord.branch_name
           ])
         ]);
+
+        const newEmpId = dbRes && dbRes[0] ? dbRes[0].insertId : null;
+        if (newEmpId) {
+          try {
+            const { hashPassword } = require('../utils/auth');
+            const { hash, salt } = hashPassword('Emp@123');
+            const username = empRecord.emp_code.toLowerCase().replace(/[^a-z0-9]/g, '');
+            await pool.query(
+              "INSERT IGNORE INTO users (employee_id, username, email, password_hash, salt, role) VALUES (?, ?, ?, ?, ?, 'employee')",
+              [newEmpId, username, empRecord.email, hash, salt]
+            );
+            await pool.query(
+              "INSERT INTO notifications (employee_id, title, message, type) VALUES (?, ?, ?, 'info')",
+              [newEmpId, 'Welcome to Employee Portal', `Welcome ${empRecord.full_name}! Your self-service portal is active. You can check-in, apply leaves, and view payslips here. Default password is Emp@123.`]
+            );
+          } catch (_) {}
+        }
         imported++;
       }
     }
@@ -670,9 +687,26 @@ router.post('/', async (req, res) => {
       )
     ]);
 
+    const empId = dbResult[0].insertId;
+
+    // Auto-create login credentials and welcome notification for new employee
+    try {
+      const { hashPassword } = require('../utils/auth');
+      const { hash, salt } = hashPassword('Emp@123');
+      const username = data.emp_code.toLowerCase().replace(/[^a-z0-9]/g, '');
+      await pool.query(
+        "INSERT INTO users (employee_id, username, email, password_hash, salt, role) VALUES (?, ?, ?, ?, ?, 'employee')",
+        [empId, username, data.email, hash, salt]
+      );
+      await pool.query(
+        "INSERT INTO notifications (employee_id, title, message, type) VALUES (?, ?, ?, 'info')",
+        [empId, 'Welcome to Employee Portal', `Welcome ${data.full_name}! Your self-service portal is active. You can check-in, apply leaves, and view payslips here. Default password is Emp@123.`]
+      );
+    } catch (_) {}
+
     res.status(201).json({
       message: 'Employee saved to text file and MySQL database.',
-      id: dbResult[0].insertId,
+      id: empId,
       avatar: avatarUrl
     });
   } catch (err) {

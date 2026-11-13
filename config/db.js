@@ -163,6 +163,93 @@ async function initDatabase() {
       FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
     )`);
 
+  // Check-in / Check-out columns for Attendance
+  const attCols = [
+    "ALTER TABLE attendance ADD COLUMN check_in_time VARCHAR(20) DEFAULT NULL",
+    "ALTER TABLE attendance ADD COLUMN check_out_time VARCHAR(20) DEFAULT NULL",
+    "ALTER TABLE attendance ADD COLUMN work_hours DECIMAL(4,2) DEFAULT NULL"
+  ];
+  for (const q of attCols) {
+    try { await pool.query(q); } catch (_) {}
+  }
+
+  // Users Table with Role (admin, hr, employee)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT DEFAULT NULL,
+      username VARCHAR(80) NOT NULL UNIQUE,
+      email VARCHAR(150) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      salt VARCHAR(64) NOT NULL,
+      role ENUM('admin', 'hr', 'employee') NOT NULL DEFAULT 'employee',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Notifications Table for Employee Self-Service
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      employee_id INT NOT NULL,
+      title VARCHAR(150) NOT NULL,
+      message TEXT NOT NULL,
+      type VARCHAR(30) NOT NULL DEFAULT 'info',
+      is_read BOOLEAN NOT NULL DEFAULT FALSE,
+      link_url VARCHAR(255) DEFAULT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Seed default admin and hr accounts if not present
+  try {
+    const { hashPassword } = require('../utils/auth');
+
+    // Admin
+    const [adminExists] = await pool.query("SELECT id FROM users WHERE email = 'admin@company.com' OR role = 'admin'");
+    if (!adminExists.length) {
+      const { hash, salt } = hashPassword('Admin@123');
+      await pool.query(
+        "INSERT INTO users (employee_id, username, email, password_hash, salt, role) VALUES (NULL, 'admin', 'admin@company.com', ?, ?, 'admin')",
+        [hash, salt]
+      );
+    }
+
+    // HR
+    const [hrExists] = await pool.query("SELECT id FROM users WHERE email = 'hr@company.com' OR username = 'hr'");
+    if (!hrExists.length) {
+      const { hash, salt } = hashPassword('Hr@123');
+      await pool.query(
+        "INSERT INTO users (employee_id, username, email, password_hash, salt, role) VALUES (NULL, 'hr', 'hr@company.com', ?, ?, 'hr')",
+        [hash, salt]
+      );
+    }
+
+    // Provision user accounts for any existing employees
+    const [allEmps] = await pool.query("SELECT id, emp_code, email, full_name FROM employees");
+    for (const emp of allEmps) {
+      const [u] = await pool.query("SELECT id FROM users WHERE employee_id = ? OR email = ?", [emp.id, emp.email]);
+      if (!u.length) {
+        const { hash, salt } = hashPassword('Emp@123');
+        const username = emp.emp_code.toLowerCase().replace(/[^a-z0-9]/g, '') || `emp_${emp.id}`;
+        try {
+          await pool.query(
+            "INSERT INTO users (employee_id, username, email, password_hash, salt, role) VALUES (?, ?, ?, ?, ?, 'employee')",
+            [emp.id, username, emp.email, hash, salt]
+          );
+          await pool.query(
+            "INSERT INTO notifications (employee_id, title, message, type) VALUES (?, ?, ?, ?)",
+            [emp.id, 'Welcome to Employee Portal', `Hi ${emp.full_name}, welcome to your Employee Self-Service portal! You can check-in, apply leaves, and view payslips here.`, 'info']
+          );
+        } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.error('Error seeding default users:', err.message);
+  }
+
   console.log(`MySQL connected. Database "${database}" ready with all tables.`);
 }
 

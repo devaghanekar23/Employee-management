@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login - Employee Data Manager</title>
+<link rel="stylesheet" href="/css/style.css" />
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
+  --primary:#1f5fd6; --primary-soft:#e8f0fe; --accent:#f58a5b; --accent-soft:#fff1ea;
+  --green:#16a34a; --green-soft:#eafaf0; --red:#dc2626; --red-soft:#fef2f2;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 12px 28px rgba(0,0,0,.08);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --soft:#1c2330; --text:#e6edf3; --muted:#8b98a9; --line:#262e3b;
+  --primary:#4c8dff; --primary-soft:#172640; --accent:#ff9d73; --accent-soft:#3a2418;
+  --green:#3fb950; --green-soft:#12301c; --red:#f85149; --red-soft:#3b1618;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  position:relative;
+}
+.theme-toggle{
+  position:absolute;
+  top:20px;
+  right:20px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--muted);
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition:.15s;
+}
+.theme-toggle:hover{color:var(--text);background:var(--soft)}
+
+.login-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  width:100%;
+  max-width:440px;
+  padding:36px 32px;
+  animation:pop .25s ease-out;
+}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+
+.brand{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  margin-bottom:28px;
+}
+.brand-logo{
+  width:52px;
+  height:52px;
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),#60a5fa);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  font-size:24px;
+  font-weight:800;
+  box-shadow:0 8px 16px rgba(31,95,214,.25);
+  margin-bottom:14px;
+}
+.brand h1{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.brand p{color:var(--muted);font-size:13.5px;margin-top:4px}
+
+.alert{
+  padding:11px 14px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:500;
+  margin-bottom:20px;
+  display:none;
+}
+.alert.error{display:block;background:var(--red-soft);color:var(--red);border:1px solid var(--red-soft)}
+.alert.success{display:block;background:var(--green-soft);color:var(--green);border:1px solid var(--green-soft)}
+
+.form-group{margin-bottom:18px}
+.form-group label{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  margin-bottom:6px;
+  color:var(--text);
+}
+.input-wrap{position:relative}
+.input-wrap input{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--text);
+  border-radius:10px;
+  font-size:14px;
+  font-family:inherit;
+  transition:.15s;
+}
+.input-wrap input:focus{
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px var(--primary-soft);
+}
+.pwd-toggle{
+  position:absolute;
+  right:12px;
+  top:50%;
+  transform:translateY(-50%);
+  background:none;
+  border:none;
+  color:var(--muted);
+  font-size:16px;
+  cursor:pointer;
+  padding:4px;
+}
+.pwd-toggle:hover{color:var(--text)}
+
+.btn-submit{
+  width:100%;
+  padding:12px;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  font-size:14.5px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.15s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-top:10px;
+}
+.btn-submit:hover{filter:brightness(1.08)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+
+/* Quick Demo Logins Bar */
+.demo-section{
+  margin-top:28px;
+  padding-top:20px;
+  border-top:1px dashed var(--line);
+}
+.demo-title{
+  font-size:12px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:var(--muted);
+  text-align:center;
+  margin-bottom:12px;
+}
+.demo-pills{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:8px;
+}
+.demo-pill{
+  background:var(--soft);
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:8px 6px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  text-align:center;
+  transition:.15s;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+}
+.demo-pill:hover{
+  background:var(--primary-soft);
+  border-color:var(--primary);
+  color:var(--primary);
+}
+.demo-pill span{font-size:10px;color:var(--muted);font-weight:400}
+
+/* Mobile Responsive */
+@media(max-width:480px){
+  body{padding:14px}
+  .login-card{padding:24px 18px;border-radius:16px}
+  .brand-logo{width:44px;height:44px;font-size:20px;margin-bottom:10px}
+  .brand h1{font-size:20px}
+  .brand p{font-size:12.5px}
+  .demo-pills{grid-template-columns:1fr;gap:6px}
+  .demo-pill{flex-direction:row;justify-content:space-between;padding:10px 14px}
+  .demo-pill span{font-size:11px}
+  .theme-toggle{top:12px;right:12px;width:36px;height:36px}
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeBtn" title="Toggle Theme" aria-label="Toggle Theme">🌓</button>
+
+<div class="login-card">
+  <div class="brand">
+    <div class="brand-logo">E</div>
+    <h1>Workplace Portal</h1>
+    <p>Sign in with your role or employee credentials</p>
+  </div>
+
+  <div id="alertBox" class="alert"></div>
+
+  <form id="loginForm" novalidate>
+    <div class="form-group">
+      <label for="emailOrUsername">Email or Employee ID</label>
+      <div class="input-wrap">
+        <input type="text" id="emailOrUsername" placeholder="e.g. admin@company.com or EMP101" required autocomplete="username" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+        <button type="button" class="pwd-toggle" id="pwdToggle" title="Show/Hide Password">👁️</button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">
+      <span>Sign In</span>
+    </button>
+  </form>
+
+  <!-- Quick 1-Click Demo Login Pills -->
+  <div class="demo-section">
+    <div class="demo-title">⚡ 1-Click Demo Accounts</div>
+    <div class="demo-pills">
+      <button type="button" class="demo-pill" onclick="quickFill('admin@company.com', 'Admin@123')">
+        👑 Admin
+        <span>admin@company.com</span>
+      </button>
+      <button type="button" class="demo-pill" onclick="quickFill('hr@company.com', 'Hr@123')">
+        💼 HR
+        <span>hr@company.com</span>
+      </button>
+      <button type="button" class="demo-pill" id="empDemoPill" onclick="quickFill('salu@gmal.com', 'Emp@123')">
+        👤 Employee
+        <span>salu@gmal.com</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Theme Management
+const savedTheme = localStorage.getItem('edm_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+document.documentElement.dataset.theme = savedTheme;
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme;
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('edm_theme', next);
+});
+
+// Show / Hide Password
+const pwdInput = document.getElementById('password');
+const pwdToggle = document.getElementById('pwdToggle');
+pwdToggle.addEventListener('click', () => {
+  const isPass = pwdInput.type === 'password';
+  pwdInput.type = isPass ? 'text' : 'password';
+  pwdToggle.textContent = isPass ? '🔒' : '👁️';
+});
+
+// Quick fill helper
+function quickFill(user, pass) {
+  document.getElementById('emailOrUsername').value = user;
+  document.getElementById('password').value = pass;
+  document.getElementById('alertBox').className = 'alert';
+  document.getElementById('submitBtn').focus();
+}
+
+// Fetch available employee demo account dynamically
+fetch('/api/auth/demo-accounts')
+  .then(r => r.json())
+  .then(data => {
+    if (data.employees && data.employees.length) {
+      const first = data.employees[0];
+      const pill = document.getElementById('empDemoPill');
+      if (pill) {
+        pill.innerHTML = `👤 Employee <span>${first.email}</span>`;
+        pill.setAttribute('onclick', `quickFill('${first.email}', '${first.pass}')`);
+      }
+    }
+  })
+  .catch(() => {});
+
+// Login Form Submit
+const form = document.getElementById('loginForm');
+const alertBox = document.getElementById('alertBox');
+const submitBtn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  alertBox.className = 'alert';
+  const emailOrUsername = document.getElementById('emailOrUsername').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!emailOrUsername || !password) {
+    alertBox.textContent = 'Please enter your username/email and password.';
+    alertBox.className = 'alert error';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = 'Signing in...';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailOrUsername, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || 'Login failed.');
+    }
+
+    // Save token & user profile locally
+    localStorage.setItem('auth_token', data.token);
+    localStorage.setItem('current_user', JSON.stringify(data.user));
+
+    alertBox.textContent = 'Login successful! Redirecting...';
+    alertBox.className = 'alert success';
+
+    setTimeout(() => {
+      if (data.user.role === 'employee') {
+        window.location.href = '/portal';
+      } else {
+        window.location.href = '/dashboard';
+      }
+    }, 400);
+  } catch (err) {
+    alertBox.textContent = err.message;
+    alertBox.className = 'alert error';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Sign In';
+  }
+});
+</script>
+</body>
+</html>
+

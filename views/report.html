@@ -87,12 +87,17 @@
       .navbar .brand { margin-bottom: 4px; }
       .nav-links {
         overflow-x: auto;
+        overflow-y: hidden;
         white-space: nowrap;
         padding-bottom: 4px;
         -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        display: flex;
+        gap: 6px;
       }
-      .nav-links a { padding: 6px 10px; font-size: 0.85rem; }
-      .container { padding: 0 14px; margin: 16px auto; }
+      .nav-links::-webkit-scrollbar { display: none; }
+      .nav-links a { padding: 6px 12px; font-size: 0.85rem; flex-shrink: 0; }
+      .container { padding: 0 12px; margin: 16px auto; }
       .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
       .stat { padding: 12px 14px; }
       .stat .value { font-size: 1.3rem; }
@@ -101,7 +106,8 @@
       .toolbar input, .toolbar select { width: 100% !important; max-width: none !important; }
       .toolbar .spacer { display: none; }
       .toolbar .btn { width: 100%; justify-content: center; }
-      .card { padding: 16px 14px; }
+      .card { padding: 14px 12px; min-width: 0; max-width: 100%; }
+      .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
     }
     @media (max-width: 480px) {
       .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -122,6 +128,8 @@
       <a href="/payroll">Payroll</a>
       <a href="/org-chart">Org Chart</a>
       <a href="/report" class="active">Employee Report</a>
+      <a href="/portal">Employee Portal</a>
+      <a href="/logout" style="color:var(--red)">Sign Out</a>
     </div>
   </nav>
 
