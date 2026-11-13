@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Employee Self-Service Portal</title>
+<title>Employee Portal</title>
 <link rel="stylesheet" href="/css/style.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -144,6 +144,7 @@ a{text-decoration:none;color:inherit}
 }
 .nav-tab:hover{color:var(--text)}
 .nav-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.nav-tab .tab-icon{font-size:16px;line-height:1}
 
 /* Main Container */
 .main{
@@ -332,6 +333,47 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
   .m-foot .btn{width:100%;justify-content:center}
 }
 
+@media(max-width:680px){
+  /* Native App Bottom Navigation Bar for Mobile */
+  .nav-bar{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:90;
+    background:var(--panel);
+    border-top:1px solid var(--line);
+    border-bottom:none;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:2px;
+    box-shadow:0 -4px 16px rgba(0,0,0,.08);
+    overflow:visible;
+  }
+  .nav-tab{
+    padding:6px 2px;
+    font-size:10.5px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    border-bottom:none;
+    border-radius:10px;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .nav-tab .tab-icon{font-size:18px;line-height:1}
+  .nav-tab.active{
+    color:var(--primary);
+    background:var(--primary-soft);
+  }
+  .main{
+    padding-bottom:80px;
+  }
+}
+
 @media(max-width:540px){
   .brand h1{font-size:14px}
   .brand .logo{width:32px;height:32px;font-size:16px;border-radius:8px;margin-right:6px}
@@ -407,11 +449,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 
 <!-- Navigation Tabs -->
 <nav class="nav-bar">
-  <button class="nav-tab active" data-tab="overview">🏠 Dashboard</button>
-  <button class="nav-tab" data-tab="profile">👤 My Profile</button>
-  <button class="nav-tab" data-tab="attendance">⏱️ Attendance & Check-in</button>
-  <button class="nav-tab" data-tab="leaves">🏖️ Leaves & Balance</button>
-  <button class="nav-tab" data-tab="payslips">💰 My Payslips</button>
+  <button class="nav-tab active" data-tab="overview">
+    <span class="tab-icon">🏠</span>
+    <span>Dashboard</span>
+  </button>
+  <button class="nav-tab" data-tab="profile">
+    <span class="tab-icon">👤</span>
+    <span>Profile</span>
+  </button>
+  <button class="nav-tab" data-tab="attendance">
+    <span class="tab-icon">⏱️</span>
+    <span>Attendance</span>
+  </button>
+  <button class="nav-tab" data-tab="leaves">
+    <span class="tab-icon">🏖️</span>
+    <span>Leaves</span>
+  </button>
+  <button class="nav-tab" data-tab="payslips">
+    <span class="tab-icon">💰</span>
+    <span>Payslips</span>
+  </button>
 </nav>
 
 <!-- Main Container -->
@@ -469,6 +526,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
       <div class="stat-pill">
         <div class="l">Latest Net Salary</div>
         <div class="v" id="ov_latest_pay">₹-</div>
+        <div id="ov_pay_sub" style="font-size:11px;color:var(--muted);margin-top:4px">Gross: ₹- · Ded: -₹-</div>
       </div>
     </div>
 
@@ -811,6 +869,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
   </div>
 </div>
 
+<!-- Modal: Confirm Check Out Action -->
+<div class="overlay" id="confirmModalOverlay">
+  <div class="modal" style="max-width:380px;text-align:center">
+    <div class="m-body" style="padding:28px 24px 20px">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--red-soft);color:var(--red);font-size:24px;display:grid;place-items:center;margin:0 auto 14px">🚪</div>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Confirm Check-Out</h3>
+      <p style="color:var(--muted);font-size:13px;line-height:1.45">Are you sure you want to clock out for today? Your attendance work hours will be recorded.</p>
+    </div>
+    <div class="m-foot" style="justify-content:center;gap:10px;background:none;border-top:none;padding:0 24px 24px">
+      <button type="button" class="btn" onclick="closeConfirmModal()">Cancel</button>
+      <button type="button" class="btn danger" onclick="doActualCheckOut()" style="min-width:120px">Yes, Check Out</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Payslip Breakdown View -->
 <div class="overlay" id="payslipModalOverlay">
   <div class="modal" style="max-width:600px">
@@ -855,6 +928,13 @@ async function portalApi(url, opts = {}) {
   return data;
 }
 
+// Generate smart initials: first letter of name in CAPITAL
+function getInitials(name) {
+  if (!name) return 'U';
+  const trimmed = String(name).trim();
+  return (trimmed.charAt(0) || 'U').toUpperCase();
+}
+
 function toast(msg, type = 'ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -876,19 +956,37 @@ document.getElementById('themeBtn').addEventListener('click', () => {
 });
 
 // Dropdowns toggle
-document.getElementById('userPill').addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('userMenu').classList.toggle('open');
-  document.getElementById('notifMenu').classList.remove('open');
-});
-document.getElementById('notifBell').addEventListener('click', (e) => {
-  e.stopPropagation();
-  document.getElementById('notifMenu').classList.toggle('open');
-  document.getElementById('userMenu').classList.remove('open');
-});
+const notifBell = document.getElementById('notifBell');
+const notifMenu = document.getElementById('notifMenu');
+const userPill = document.getElementById('userPill');
+const userMenu = document.getElementById('userMenu');
+
+if (userPill && userMenu) {
+  userPill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !userMenu.classList.contains('open');
+    if (notifMenu) notifMenu.classList.remove('open');
+    userMenu.classList.toggle('open', willOpen);
+  });
+  userMenu.addEventListener('click', (e) => e.stopPropagation());
+}
+
+if (notifBell && notifMenu) {
+  notifBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !notifMenu.classList.contains('open');
+    if (userMenu) userMenu.classList.remove('open');
+    notifMenu.classList.toggle('open', willOpen);
+    if (willOpen) {
+      loadNotificationsList();
+    }
+  });
+  notifMenu.addEventListener('click', (e) => e.stopPropagation());
+}
+
 document.addEventListener('click', () => {
-  document.getElementById('userMenu')?.classList.remove('open');
-  document.getElementById('notifMenu')?.classList.remove('open');
+  if (userMenu) userMenu.classList.remove('open');
+  if (notifMenu) notifMenu.classList.remove('open');
 });
 
 // Navigation Tabs
@@ -942,7 +1040,11 @@ async function loadSummary() {
     if (data.employee.avatar) {
       avatarEl.innerHTML = `<img src="${data.employee.avatar}" alt="${data.employee.full_name}" />`;
     } else {
-      avatarEl.textContent = (data.employee.full_name || 'U').slice(0, 2).toUpperCase();
+      avatarEl.textContent = getInitials(data.employee.full_name);
+    }
+    const brandLogo = document.querySelector('.portal-head .logo');
+    if (brandLogo && data.employee.full_name) {
+      brandLogo.textContent = getInitials(data.employee.full_name);
     }
 
     // Role badge & Admin switch
@@ -988,8 +1090,22 @@ async function loadSummary() {
     // KPI Counters
     document.getElementById('ov_leave_bal').innerHTML = `${data.leaveBalance.remaining} <small style="font-size:13px;color:var(--muted)">Days</small>`;
     document.getElementById('ov_att_rate').textContent = `${data.monthlyAttendance.attendanceRate}%`;
-    document.getElementById('ov_pres_days').textContent = data.monthlyAttendance.present;
-    document.getElementById('ov_latest_pay').textContent = data.latestPayslip ? money(data.latestPayslip.net_salary) : '₹0';
+    const wDays = data.monthlyAttendance.workingDaysTillToday || 10;
+    document.getElementById('ov_pres_days').innerHTML = `${data.monthlyAttendance.present} <small style="font-size:12px;color:var(--muted);font-weight:400">/ ${wDays} working days</small>`;
+
+    // Latest Payslip Breakdown
+    const pay = data.latestPayslip;
+    if (pay) {
+      document.getElementById('ov_latest_pay').textContent = money(pay.net);
+      const subEl = document.getElementById('ov_pay_sub');
+      if (subEl) {
+        subEl.innerHTML = `Gross: <b>${money(pay.gross)}</b> · Ded: <b style="color:var(--red)">-${money(pay.deductions)}</b>`;
+      }
+    } else {
+      document.getElementById('ov_latest_pay').textContent = '₹0';
+      const subEl = document.getElementById('ov_pay_sub');
+      if (subEl) subEl.textContent = 'No payroll run yet';
+    }
 
     // Recent Leaves
     const leavesBox = document.getElementById('ov_recent_leaves');
@@ -1002,16 +1118,20 @@ async function loadSummary() {
       leavesBox.innerHTML = `<div>All clear! No pending leave requests right now.</div>`;
     }
 
-    // Latest Payslip
+    // Latest Payslip Box in Overview
     const payBox = document.getElementById('ov_latest_payslip_box');
-    if (data.latestPayslip) {
+    if (pay) {
       payBox.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;background:var(--soft);padding:10px 12px;border-radius:10px">
-          <div>
-            <b>Month: ${data.latestPayslip.month}</b>
-            <div style="color:var(--muted)">Net: ${money(data.latestPayslip.net_salary)} (${data.latestPayslip.status})</div>
+        <div style="background:var(--soft);padding:12px 14px;border-radius:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b>Month: ${pay.month}</b>
+            <button class="btn sm primary" onclick="downloadSinglePayslipPdf('${pay.month}')">📥 PDF</button>
           </div>
-          <button class="btn sm primary" onclick="downloadSinglePayslipPdf('${data.latestPayslip.month}')">📥 PDF</button>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);flex-wrap:wrap;gap:6px">
+            <span>Gross: <b>${money(pay.gross)}</b></span>
+            <span>Deductions: <b style="color:var(--red)">-${money(pay.deductions)}</b></span>
+            <span>Net Take-Home: <b style="color:var(--green)">${money(pay.net)}</b></span>
+          </div>
         </div>`;
     } else {
       payBox.textContent = 'No payslips generated yet for this account.';
@@ -1044,9 +1164,15 @@ async function handleCheckIn() {
   }
 }
 
-// Check-out action
-async function handleCheckOut() {
-  if (!confirm('Are you ready to clock out for today?')) return;
+// Check-out action with custom confirmation modal
+function handleCheckOut() {
+  document.getElementById('confirmModalOverlay').classList.add('open');
+}
+function closeConfirmModal() {
+  document.getElementById('confirmModalOverlay').classList.remove('open');
+}
+async function doActualCheckOut() {
+  closeConfirmModal();
   try {
     const res = await portalApi('/api/portal/check-out', { method: 'POST' });
     toast(res.message, 'ok');
@@ -1073,7 +1199,7 @@ async function loadProfile() {
     if (emp.avatar) {
       profAv.innerHTML = `<img src="${emp.avatar}" alt="${emp.full_name}" />`;
     } else {
-      profAv.textContent = (emp.full_name || 'U').slice(0, 2).toUpperCase();
+      profAv.textContent = getInitials(emp.full_name);
     }
 
     document.getElementById('profDob').textContent = emp.dob || '-';

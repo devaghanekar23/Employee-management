@@ -167,6 +167,39 @@ function requirePageAuth(allowedRoles = []) {
   };
 }
 
+// Extract a clean, human-readable name from an email address or username
+function formatNameFromEmail(email) {
+  if (!email) return 'User';
+  let local = String(email).trim().toLowerCase().split('@')[0];
+  if (!local) return 'User';
+
+  // Strip trailing numbers (e.g. devaghanekar23 -> devaghanekar)
+  local = local.replace(/\d+$/, '');
+
+  // Specific common cases
+  if (/^deva$/i.test(local) || /^deva[._-]?ghanekar/i.test(local)) return 'Deva Ghanekar';
+  if (/^ankur$/i.test(local) || /^ankur[._-]?mohite/i.test(local)) return 'Ankur Mohite';
+  if (/^admin/i.test(local)) return 'System Administrator';
+  if (/^hr/i.test(local)) return 'HR Manager';
+
+  // If local starts with "deva" and continues (e.g. devaghanekar)
+  if (local.startsWith('deva') && local.length > 4) {
+    const surname = local.slice(4);
+    return 'Deva ' + (surname.charAt(0).toUpperCase() + surname.slice(1).toLowerCase());
+  }
+
+  // Split on dots, hyphens, underscores or camelCase
+  let parts = local
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[._\-]+/g, ' ')
+    .trim()
+    .split(/\s+/);
+
+  return parts
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(' ') || 'Employee';
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -174,6 +207,7 @@ module.exports = {
   verifyToken,
   authenticateUser,
   requireAuth,
-  requirePageAuth
+  requirePageAuth,
+  formatNameFromEmail
 };
 

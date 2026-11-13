@@ -1,19 +1,90 @@
 const express = require('express');
 const { getPool } = require('../config/db');
-const { requireAuth } = require('../utils/auth');
+const { requireAuth, formatNameFromEmail } = require('../utils/auth');
 const { processAvatar } = require('./employees');
 
 const router = express.Router();
 
-// Helper to determine active employee ID (works for employee, and falls back gracefully for admin testing)
+// Helper to determine active employee ID (isolated per user email, starting fresh for new accounts)
 async function getEffectiveEmployeeId(req) {
-  if (req.user && req.user.employee_id) {
-    return req.user.employee_id;
-  }
-  // If an Admin/HR without an employee_id opens the portal, pick the first active employee for preview
   const pool = getPool();
+
+  if (req.user) {
+    const userEmail = String(req.user.email || '').toLowerCase().trim();
+
+    if (userEmail) {
+      const expectedName = formatNameFromEmail(userEmail);
+
+      // Revert employee 1 to Ankur Mohite if another email took it over
+      if (userEmail !== 'ankur@company.com' && !userEmail.startsWith('ankur')) {
+        try {
+          await pool.query(
+            "UPDATE employees SET email = 'ankur@company.com', full_name = 'Ankur Mohite' WHERE id = 1 AND LOWER(email) = ?",
+            [userEmail]
+          );
+        } catch (_) {}
+      }
+
+      // Check if user has their own dedicated employee record (id != 1)
+      const [ownEmps] = await pool.query(
+        "SELECT id, full_name, email FROM employees WHERE LOWER(email) = ? AND id != 1 LIMIT 1",
+        [userEmail]
+      );
+
+      if (ownEmps.length) {
+        const empId = ownEmps[0].id;
+        if (req.user.employee_id !== empId) {
+          try {
+            await pool.query('UPDATE users SET employee_id = ? WHERE id = ?', [empId, req.user.id]);
+            req.user.employee_id = empId;
+          } catch (_) {}
+        }
+        return empId;
+      }
+
+      // If user is an employee and has no employee record yet: create their clean, empty profile
+      if (req.user.role === 'employee' || userEmail.includes('@')) {
+        const empCode = `EMP${Math.floor(100 + Math.random() * 900)}`;
+        const [ins] = await pool.query(
+          `INSERT INTO employees (emp_code, full_name, email, phone, department, designation, salary, joining_date, status)
+           VALUES (?, ?, ?, '', 'IT', 'Software Engineer', 0.00, CURDATE(), 'Active')`,
+          [empCode, expectedName, userEmail]
+        );
+        const empId = ins.insertId;
+        try {
+          await pool.query('UPDATE users SET employee_id = ? WHERE id = ?', [empId, req.user.id]);
+          req.user.employee_id = empId;
+        } catch (_) {}
+        return empId;
+      }
+    }
+
+    if (req.user.employee_id) {
+      return req.user.employee_id;
+    }
+  }
+
+  // Fallback for admin previewing portal without employee_id
   const [rows] = await pool.query("SELECT id FROM employees WHERE status IN ('Active', 'Probation') LIMIT 1");
   return rows.length ? rows[0].id : null;
+}
+
+// Helper to calculate total working days (excluding Saturdays and Sundays) in the current month till today
+function getWorkingDaysTillToday() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const todayDate = now.getDate();
+
+  let count = 0;
+  for (let d = 1; d <= todayDate; d++) {
+    const dayOfWeek = new Date(year, month, d).getDay();
+    // Exclude Sunday (0) and Saturday (6)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++;
+    }
+  }
+  return Math.max(1, count);
 }
 
 // All portal routes require logged in user
@@ -62,8 +133,9 @@ router.get('/summary', async (req, res) => {
 
     const presentDays = Number(attStats.present_days) || 0;
     const halfDays = Number(attStats.half_days) || 0;
-    const totalWorking = (Number(attStats.total_recorded) || 0) || 1;
-    const attPct = Math.min(100, Math.round(((presentDays + halfDays * 0.5) / totalWorking) * 100));
+    const workingDaysTillToday = getWorkingDaysTillToday();
+    const effectivePresent = presentDays + halfDays * 0.5;
+    const attPct = effectivePresent > 0 ? Math.min(100, Math.round((effectivePresent / workingDaysTillToday) * 100)) : 0;
 
     // 4. Leave Balance (Standard 18 days allowance per year)
     const annualAllowance = 18;
@@ -79,14 +151,32 @@ router.get('/summary', async (req, res) => {
     const pendingLeaves = Number(leaveStats.pending_days) || 0;
     const remainingLeaves = Math.max(0, annualAllowance - usedLeaves);
 
-    // 5. Latest Payslip
+    // 5. Latest Payslip with Detailed Breakdown
     const [[latestPayslip]] = await pool.query(`
-      SELECT month, gross_salary, net_salary, status, payment_date
+      SELECT month, gross_salary, basic, hra, allowances, pf_deduction, tax_deduction, lop_deduction, net_salary, status, payment_date
       FROM payroll
       WHERE employee_id = ?
       ORDER BY month DESC
       LIMIT 1
     `, [empId]);
+
+    let payslipData = null;
+    if (latestPayslip) {
+      const gross = Number(latestPayslip.gross_salary || 0);
+      const pf = Number(latestPayslip.pf_deduction || 0);
+      const tax = Number(latestPayslip.tax_deduction || 0);
+      const lop = Number(latestPayslip.lop_deduction || 0);
+      const deductions = pf + tax + lop;
+      const net = Number(latestPayslip.net_salary || (gross - deductions));
+      payslipData = {
+        month: latestPayslip.month,
+        gross,
+        deductions,
+        net,
+        status: latestPayslip.status,
+        paymentDate: latestPayslip.payment_date
+      };
+    }
 
     // 6. Unread Notifications Count
     const [[notifStats]] = await pool.query(
@@ -111,6 +201,7 @@ router.get('/summary', async (req, res) => {
         present: presentDays,
         absent: Number(attStats.absent_days) || 0,
         halfDay: halfDays,
+        workingDaysTillToday,
         attendanceRate: attPct
       },
       leaveBalance: {
@@ -119,7 +210,7 @@ router.get('/summary', async (req, res) => {
         pending: pendingLeaves,
         remaining: remainingLeaves
       },
-      latestPayslip: latestPayslip || null,
+      latestPayslip: payslipData,
       unreadNotifications: Number(notifStats.unread_count) || 0
     });
   } catch (err) {

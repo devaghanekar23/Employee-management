@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Login - Employee Data Manager</title>
+<title>Workplace Login</title>
 <link rel="stylesheet" href="/css/style.css" />
 <style>
 :root{
@@ -152,48 +152,63 @@ body{
 .btn-submit:hover{filter:brightness(1.08)}
 .btn-submit:disabled{opacity:.6;cursor:not-allowed}
 
-/* Quick Demo Logins Bar */
-.demo-section{
-  margin-top:28px;
-  padding-top:20px;
-  border-top:1px dashed var(--line);
-}
-.demo-title{
+/* Role Selector Segmented Tabs */
+.role-selector-wrap{margin-bottom:20px}
+.role-label{
+  display:block;
   font-size:12px;
-  font-weight:600;
+  font-weight:700;
   text-transform:uppercase;
   letter-spacing:.04em;
   color:var(--muted);
-  text-align:center;
-  margin-bottom:12px;
+  margin-bottom:8px;
 }
-.demo-pills{
+.role-pills{
   display:grid;
   grid-template-columns:repeat(3, 1fr);
-  gap:8px;
-}
-.demo-pill{
+  gap:6px;
   background:var(--soft);
+  padding:5px;
+  border-radius:12px;
   border:1px solid var(--line);
-  color:var(--text);
-  padding:8px 6px;
+}
+.role-pill{
+  background:transparent;
+  border:1px solid transparent;
+  color:var(--muted);
+  padding:9px 6px;
   border-radius:8px;
-  font-size:12px;
+  font-size:13px;
   font-weight:600;
   cursor:pointer;
-  text-align:center;
-  transition:.15s;
+  transition:all .16s ease;
   display:flex;
-  flex-direction:column;
   align-items:center;
-  gap:3px;
+  justify-content:center;
+  gap:6px;
+  font-family:inherit;
+  outline:none;
 }
-.demo-pill:hover{
-  background:var(--primary-soft);
-  border-color:var(--primary);
+.role-pill:hover{
+  color:var(--text);
+  background:rgba(0,0,0,.03);
+}
+[data-theme="dark"] .role-pill:hover{
+  background:rgba(255,255,255,.05);
+}
+.role-pill.active{
+  background:var(--panel);
   color:var(--primary);
+  border-color:var(--line);
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
 }
-.demo-pill span{font-size:10px;color:var(--muted);font-weight:400}
+[data-theme="dark"] .role-pill.active{
+  background:#21262d;
+  color:var(--primary);
+  border-color:#30363d;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.role-pill .role-icon{font-size:14px}
 
 /* Mobile Responsive */
 @media(max-width:480px){
@@ -202,9 +217,8 @@ body{
   .brand-logo{width:44px;height:44px;font-size:20px;margin-bottom:10px}
   .brand h1{font-size:20px}
   .brand p{font-size:12.5px}
-  .demo-pills{grid-template-columns:1fr;gap:6px}
-  .demo-pill{flex-direction:row;justify-content:space-between;padding:10px 14px}
-  .demo-pill span{font-size:11px}
+  .role-pills{padding:4px}
+  .role-pill{padding:8px 4px;font-size:12px;gap:4px}
   .theme-toggle{top:12px;right:12px;width:36px;height:36px}
 }
 </style>
@@ -222,18 +236,41 @@ body{
 
   <div id="alertBox" class="alert"></div>
 
+  <!-- Role Selector (Admin, HR, Employee) -->
+  <div class="role-selector-wrap">
+    <span class="role-label">Select Your Role</span>
+    <div class="role-pills" role="radiogroup" aria-label="Select Role">
+      <button type="button" class="role-pill" data-role="admin" id="roleBtnAdmin" onclick="selectRole('admin')">
+        <span class="role-icon">🛡️</span>
+        <span>Admin</span>
+      </button>
+      <button type="button" class="role-pill" data-role="hr" id="roleBtnHr" onclick="selectRole('hr')">
+        <span class="role-icon">👔</span>
+        <span>HR</span>
+      </button>
+      <button type="button" class="role-pill active" data-role="employee" id="roleBtnEmployee" onclick="selectRole('employee')">
+        <span class="role-icon">👤</span>
+        <span>Employee</span>
+      </button>
+    </div>
+    <input type="hidden" id="selectedRole" value="employee" />
+  </div>
+
   <form id="loginForm" novalidate>
     <div class="form-group">
-      <label for="emailOrUsername">Email or Employee ID</label>
+      <label for="emailOrUsername" id="emailLabel">Email Address</label>
       <div class="input-wrap">
-        <input type="text" id="emailOrUsername" placeholder="e.g. admin@company.com or EMP101" required autocomplete="username" />
+        <input type="text" id="emailOrUsername" placeholder="e.g. devaghanekar@gmail.com" required autocomplete="email" />
       </div>
     </div>
 
     <div class="form-group">
-      <label for="password">Password</label>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label for="password" style="margin-bottom:0">Password</label>
+        <a href="javascript:void(0)" onclick="openForgotPwd()" style="font-size:12px;color:var(--primary);text-decoration:none;font-weight:600">Forgot password?</a>
+      </div>
       <div class="input-wrap">
-        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+        <input type="password" id="password" placeholder="Enter password (any password)" required autocomplete="current-password" />
         <button type="button" class="pwd-toggle" id="pwdToggle" title="Show/Hide Password">👁️</button>
       </div>
     </div>
@@ -243,23 +280,35 @@ body{
     </button>
   </form>
 
-  <!-- Quick 1-Click Demo Login Pills -->
-  <div class="demo-section">
-    <div class="demo-title">⚡ 1-Click Demo Accounts</div>
-    <div class="demo-pills">
-      <button type="button" class="demo-pill" onclick="quickFill('admin@company.com', 'Admin@123')">
-        👑 Admin
-        <span>admin@company.com</span>
-      </button>
-      <button type="button" class="demo-pill" onclick="quickFill('hr@company.com', 'Hr@123')">
-        💼 HR
-        <span>hr@company.com</span>
-      </button>
-      <button type="button" class="demo-pill" id="empDemoPill" onclick="quickFill('salu@gmal.com', 'Emp@123')">
-        👤 Employee
-        <span>salu@gmal.com</span>
-      </button>
+  <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:16px">
+    Select role, then enter your email address and any password to sign in.
+  </div>
+</div>
+
+<!-- Modal: Forgot Password -->
+<div class="modal-overlay" id="forgotPwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;padding:16px">
+  <div class="login-card" style="max-width:390px;position:relative">
+    <button type="button" onclick="closeForgotPwd()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer">&times;</button>
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="width:46px;height:46px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:22px;margin:0 auto 10px">🔑</div>
+      <h3 style="font-size:18px;font-weight:700">Forgot Password?</h3>
+      <p style="color:var(--muted);font-size:12.5px;margin-top:4px">Enter your registered email address to receive password reset instructions.</p>
     </div>
+    <div id="forgotAlert" class="alert"></div>
+    <form id="forgotForm" onsubmit="handleForgotSubmit(event)">
+      <div class="form-group">
+        <label for="forgotEmail">Email Address</label>
+        <div class="input-wrap">
+          <input type="email" id="forgotEmail" placeholder="e.g. employee@company.com" required />
+        </div>
+      </div>
+      <button type="submit" class="btn-submit" id="btnForgotSubmit" style="margin-top:6px">
+        <span>Send Instructions</span>
+      </button>
+      <div style="text-align:center;margin-top:14px">
+        <a href="javascript:void(0)" onclick="closeForgotPwd()" style="font-size:12.5px;color:var(--muted);text-decoration:none">Back to Login</a>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -283,28 +332,71 @@ pwdToggle.addEventListener('click', () => {
   pwdToggle.textContent = isPass ? '🔒' : '👁️';
 });
 
-// Quick fill helper
-function quickFill(user, pass) {
-  document.getElementById('emailOrUsername').value = user;
-  document.getElementById('password').value = pass;
-  document.getElementById('alertBox').className = 'alert';
-  document.getElementById('submitBtn').focus();
+// Role Selection Switcher
+let currentRole = 'employee';
+function selectRole(role) {
+  currentRole = role;
+  const roleInput = document.getElementById('selectedRole');
+  if (roleInput) roleInput.value = role;
+
+  ['admin', 'hr', 'employee'].forEach(r => {
+    const btn = document.getElementById('roleBtn' + r.charAt(0).toUpperCase() + r.slice(1));
+    if (btn) btn.classList.toggle('active', r === role);
+  });
+
+  const emailInput = document.getElementById('emailOrUsername');
+  if (emailInput) {
+    if (role === 'admin') {
+      emailInput.placeholder = 'e.g. admin@company.com or your email';
+    } else if (role === 'hr') {
+      emailInput.placeholder = 'e.g. hr@company.com or your email';
+    } else {
+      emailInput.placeholder = 'e.g. devaghanekar@gmail.com';
+    }
+  }
+
+  const alertBox = document.getElementById('alertBox');
+  if (alertBox) alertBox.className = 'alert';
 }
 
-// Fetch available employee demo account dynamically
-fetch('/api/auth/demo-accounts')
-  .then(r => r.json())
-  .then(data => {
-    if (data.employees && data.employees.length) {
-      const first = data.employees[0];
-      const pill = document.getElementById('empDemoPill');
-      if (pill) {
-        pill.innerHTML = `👤 Employee <span>${first.email}</span>`;
-        pill.setAttribute('onclick', `quickFill('${first.email}', '${first.pass}')`);
-      }
-    }
-  })
-  .catch(() => {});
+// Forgot Password Modal
+function openForgotPwd() {
+  document.getElementById('forgotAlert').className = 'alert';
+  document.getElementById('forgotEmail').value = '';
+  document.getElementById('forgotPwdModal').style.display = 'flex';
+  document.getElementById('forgotEmail').focus();
+}
+function closeForgotPwd() {
+  document.getElementById('forgotPwdModal').style.display = 'none';
+}
+async function handleForgotSubmit(e) {
+  e.preventDefault();
+  const alert = document.getElementById('forgotAlert');
+  const btn = document.getElementById('btnForgotSubmit');
+  const email = document.getElementById('forgotEmail').value.trim();
+
+  if (!email) return;
+  btn.disabled = true;
+  btn.innerHTML = 'Sending...';
+  alert.className = 'alert';
+
+  try {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    alert.textContent = data.message;
+    alert.className = 'alert success';
+  } catch (err) {
+    alert.textContent = 'Unable to send instructions. Please contact HR.';
+    alert.className = 'alert error';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Send Instructions';
+  }
+}
 
 // Login Form Submit
 const form = document.getElementById('loginForm');
@@ -317,20 +409,42 @@ form.addEventListener('submit', async (e) => {
   const emailOrUsername = document.getElementById('emailOrUsername').value.trim();
   const password = document.getElementById('password').value;
 
-  if (!emailOrUsername || !password) {
-    alertBox.textContent = 'Please enter your username/email and password.';
+  if (!emailOrUsername) {
+    alertBox.textContent = 'Please enter your email address.';
     alertBox.className = 'alert error';
+    document.getElementById('emailOrUsername').focus();
+    return;
+  }
+
+  // Validate that email looks like a valid email ("email email jaisa hona chahiye")
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isEmpCode = /^[a-zA-Z0-9_\-\.]+$/.test(emailOrUsername) && !emailOrUsername.includes('@');
+  if (!emailRegex.test(emailOrUsername) && !isEmpCode) {
+    alertBox.textContent = 'Please enter a valid email address (e.g. devaghanekar@gmail.com).';
+    alertBox.className = 'alert error';
+    document.getElementById('emailOrUsername').focus();
+    return;
+  }
+
+  if (!password) {
+    alertBox.textContent = 'Please enter your password.';
+    alertBox.className = 'alert error';
+    document.getElementById('password').focus();
     return;
   }
 
   submitBtn.disabled = true;
-  submitBtn.innerHTML = 'Signing in...';
+  submitBtn.innerHTML = '<span>Signing in...</span>';
 
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emailOrUsername, password })
+      body: JSON.stringify({
+        emailOrUsername,
+        password,
+        role: currentRole
+      })
     });
     const data = await res.json();
 
@@ -342,7 +456,8 @@ form.addEventListener('submit', async (e) => {
     localStorage.setItem('auth_token', data.token);
     localStorage.setItem('current_user', JSON.stringify(data.user));
 
-    alertBox.textContent = 'Login successful! Redirecting...';
+    const roleName = data.user.role === 'admin' ? 'Admin' : (data.user.role === 'hr' ? 'HR' : 'Employee');
+    alertBox.textContent = `Login successful as ${roleName}! Redirecting...`;
     alertBox.className = 'alert success';
 
     setTimeout(() => {
@@ -351,12 +466,12 @@ form.addEventListener('submit', async (e) => {
       } else {
         window.location.href = '/dashboard';
       }
-    }, 400);
+    }, 350);
   } catch (err) {
     alertBox.textContent = err.message;
     alertBox.className = 'alert error';
     submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Sign In';
+    submitBtn.innerHTML = '<span>Sign In</span>';
   }
 });
 </script>

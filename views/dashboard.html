@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard | Employee Data Manager</title>
+<title>Dashboard</title>
 <style>
 :root{
   --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
@@ -800,7 +800,7 @@ async function api(url, opts = {}) {
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-const initials = n => (n||'').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const initials = n => ((n || '').trim().charAt(0) || 'U').toUpperCase();
 const colorFor = s => { let h = 0; for (const c of (s||'')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
 
 /* Avatar helper: shows uploaded photo if available, else initials */
