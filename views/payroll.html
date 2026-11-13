@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payroll Management | Employee Data Manager</title>
+<!-- CDN Libraries for PDF & Excel Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
+  --primary:#1f5fd6; --primary-soft:#e8f0fe; --accent:#f58a5b; --accent-soft:#fff1ea;
+  --green:#16a34a; --green-soft:#e7f7ed; --red:#dc2626; --red-soft:#fde8e8;
+  --amber:#d97706; --amber-soft:#fef3c7;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --soft:#1c2330; --text:#e6edf3; --muted:#8b98a9; --line:#262e3b;
+  --primary:#4c8dff; --primary-soft:#172640; --accent:#ff9d73; --accent-soft:#3a2418;
+  --green:#3fb950; --green-soft:#12301c; --red:#f85149; --red-soft:#3b1618;
+  --amber:#f59e0b; --amber-soft:#362810;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+.app{display:grid;grid-template-columns:72px 1fr;min-height:100vh}
+
+/* Sidebar (Desktop) */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:10px;position:sticky;top:0;height:100vh;z-index:40}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:14px;flex-shrink:0}
+.nav{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);border:none;background:none;position:relative;transition:.15s;flex-shrink:0}
+.nav:hover{background:var(--soft);color:var(--text)}
+.nav.active{background:var(--primary-soft);color:var(--primary)}
+.nav svg{width:22px;height:22px}
+.nav[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:54px;background:#111827;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:20}
+.spacer{flex:1}
+
+/* Main Content */
+.main{padding:28px 36px;max-width:1440px;margin:0 auto;width:100%}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:16px}
+.crumb{color:var(--muted);font-size:12.5px;margin-bottom:4px}
+.crumb b{color:var(--text);font-weight:600}
+.page-title h1{font-size:24px;font-weight:700;display:flex;align-items:center;gap:10px}
+.page-title p{color:var(--muted);font-size:13.5px;margin-top:2px}
+
+.actions-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 15px;border-radius:10px;font-size:13.5px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.success{background:var(--green);border-color:var(--green);color:#fff}
+.btn.success:hover{filter:brightness(1.08)}
+.btn.outline-green{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+
+input,select{padding:9px 12px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:13.5px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+
+/* Stats Cards */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px}
+.stat{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--panel);box-shadow:var(--shadow)}
+.stat .l{color:var(--muted);font-size:12.5px;font-weight:500}
+.stat .v{font-size:24px;font-weight:700;color:var(--text);margin-top:6px}
+.stat .v.blue{color:var(--primary)}
+.stat .v.good{color:var(--green)}
+.stat .v.bad{color:var(--red)}
+.stat .sub{font-size:11.5px;color:var(--muted);margin-top:4px}
+
+/* Panel Card */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px;margin-bottom:30px}
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.toolbar .grow{flex:1}
+
+/* Tables */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left}
+th{padding:12px 14px;background:var(--soft);color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tr:hover td{background:var(--soft)}
+
+/* Avatar & Identity */
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0;overflow:hidden;background:#1f5fd6}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.emp-meta{display:flex;align-items:center;gap:10px}
+.emp-meta .n{font-weight:600;font-size:14px}
+.emp-meta .c{color:var(--muted);font-size:12px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+.badge.paid{background:var(--green-soft);color:var(--green)}
+.badge.gen{background:var(--amber-soft);color:var(--amber)}
+
+/* Salary breakdown badges in table */
+.sal-part{font-size:11.5px;color:var(--muted);display:block}
+.sal-gross{font-weight:700;color:var(--text)}
+.sal-net{font-weight:700;color:var(--green);font-size:15px}
+
+/* Action button group */
+.action-btns{display:flex;align-items:center;gap:6px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.m-head{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.m-head h3{font-size:18px;font-weight:700}
+.m-head .x{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1}
+.m-body{padding:22px 24px;overflow-y:auto;flex:1}
+.m-foot{padding:14px 24px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:var(--soft)}
+
+/* Salary Breakdown Table inside Modal */
+.calc-table{width:100%;border-collapse:collapse;margin:16px 0}
+.calc-table th, .calc-table td{padding:10px 12px;font-size:13px}
+.calc-table th{background:var(--soft);color:var(--muted);font-weight:600}
+.calc-table td{border-bottom:1px solid var(--line)}
+.calc-table tr.total-row td{font-weight:700;font-size:14px;background:var(--soft)}
+
+.takehome-box{background:var(--green-soft);border:1px solid var(--green);border-radius:12px;padding:16px;text-align:center;margin-top:16px}
+.takehome-title{font-size:12px;font-weight:600;text-transform:uppercase;color:var(--green)}
+.takehome-val{font-size:28px;font-weight:800;color:var(--green);margin-top:4px}
+
+#toast{position:fixed;right:22px;bottom:22px;padding:12px 18px;border-radius:12px;color:#fff;font-size:13.5px;opacity:0;transform:translateY(10px);transition:.25s;z-index:200;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+#toast.ok{background:#16a34a} #toast.bad{background:#dc2626}
+
+/* ==================== MOBILE RESPONSIVE ==================== */
+@media(max-width:860px){
+  .app{display:block;min-height:100vh}
+
+  /* Sticky Top Horizontal Navigation on Mobile */
+  .side{
+    flex-direction:row;
+    height:56px;
+    width:100%;
+    padding:0 14px;
+    justify-content:flex-start;
+    position:sticky;
+    top:0;
+    z-index:50;
+    border-right:none;
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+    gap:6px;
+  }
+  .logo{margin:0 8px 0 0;width:34px;height:34px;font-size:16px;border-radius:10px}
+  .nav{width:40px;height:40px;border-radius:10px}
+  .nav svg{width:20px;height:20px}
+  .nav[data-tip]:hover::after{display:none}
+
+  /* Content area on Mobile */
+  .main{padding:16px 14px 40px}
+  .top-bar{flex-direction:column;align-items:stretch;gap:14px;margin-bottom:18px}
+  .page-title h1{font-size:20px}
+  .page-title p{font-size:12.5px}
+
+  /* Action controls on Mobile */
+  .actions-top{width:100%;display:grid;grid-template-columns:1fr;gap:10px}
+  .actions-top input{width:100%}
+  .actions-top .btn{width:100%;padding:10px}
+
+  /* Stats grid on Mobile */
+  .stats{grid-template-columns:repeat(2, 1fr);gap:10px;margin-bottom:18px}
+  .stat{padding:12px 14px}
+  .stat .l{font-size:11px}
+  .stat .v{font-size:20px;margin-top:4px}
+
+  /* Card and Toolbar on Mobile */
+  .card{padding:14px;border-radius:12px;margin-bottom:20px}
+  .toolbar{flex-direction:column;align-items:stretch;gap:10px}
+  .toolbar input, .toolbar select{width:100% !important;max-width:none !important}
+  .toolbar .grow{display:none}
+
+  /* Table styling on mobile */
+  th, td{padding:10px 10px;font-size:12.5px}
+  .action-btns .btn{padding:5px 8px;font-size:12px}
+  
+  .modal{max-width:96vw;max-height:92vh}
+  .m-body{padding:16px}
+  .m-head{padding:14px 16px}
+  .m-foot{padding:12px 16px;flex-direction:column}
+  .m-foot .btn{width:100%}
+}
+
+@media(max-width:420px){
+  .stats{grid-template-columns:1fr;gap:8px}
+  .stat{padding:12px 14px}
+  .stat .v{font-size:20px}
+  .page-title h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo">E</div>
+    <a class="nav" data-tip="Dashboard" href="/dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    </a>
+    <a class="nav" data-tip="Attendance" href="/attendance" aria-label="Attendance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+    </a>
+    <a class="nav" data-tip="Leaves" href="/leaves" aria-label="Leaves">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><circle cx="12" cy="16" r="2"/></svg>
+    </a>
+    <a class="nav active" data-tip="Payroll" href="/payroll" aria-label="Payroll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </a>
+    <a class="nav" data-tip="Org Chart" href="/org-chart" aria-label="Org Chart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M5 17v-2a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2"/></svg>
+    </a>
+    <a class="nav" data-tip="Employee Report" href="/report" aria-label="Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+    </a>
+    <div class="spacer"></div>
+    <button class="nav" id="themeBtn" data-tip="Dark / Light mode" title="Toggle theme" aria-label="Theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="top-bar">
+      <div>
+        <div class="crumb">HR Management &nbsp;›&nbsp; <b>Payroll Module</b></div>
+        <div class="page-title">
+          <h1>Payroll & Salary Management</h1>
+          <p>Automated salary calculations, attendance LOP deductions, payslip PDF generation, and email disbursal.</p>
+        </div>
+      </div>
+      <div class="actions-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="font-weight:600;font-size:12.5px;color:var(--muted);white-space:nowrap">Payroll Month:</label>
+          <input type="month" id="payrollMonth" />
+        </div>
+        <button class="btn primary" id="runPayrollBtn">⚡ Run Monthly Payroll</button>
+        <button class="btn success" id="markAllPaidBtn">✓ Mark All Paid</button>
+      </div>
+    </div>
+
+    <!-- Stats Summary for Selected Month -->
+    <div class="stats">
+      <div class="stat">
+        <div class="l">Total Monthly Gross</div>
+        <div class="v blue" id="statGross">₹0</div>
+        <div class="sub" id="statEmpCount">0 Employees Processed</div>
+      </div>
+      <div class="stat">
+        <div class="l">Total Deductions (PF, Tax, LOP)</div>
+        <div class="v bad" id="statDeductions">₹0</div>
+        <div class="sub">PF 12% + Income Tax + Absent Days LOP</div>
+      </div>
+      <div class="stat">
+        <div class="l">Net Disbursable Salary</div>
+        <div class="v good" id="statNet">₹0</div>
+        <div class="sub">Total Net Take-Home Pay</div>
+      </div>
+      <div class="stat">
+        <div class="l">Payment Status</div>
+        <div class="v" id="statPaidRatio">0 / 0 Paid</div>
+        <div class="sub" id="statPendingCount">0 Pending Disbursals</div>
+      </div>
+    </div>
+
+    <!-- Payroll Records Card -->
+    <div class="card">
+      <div class="toolbar">
+        <input id="searchEmp" placeholder="Search employee name, code, department..." style="min-width:240px" />
+        <select id="deptFilter">
+          <option value="">All Departments</option>
+          <option>IT</option><option>HR</option><option>Finance</option><option>Sales</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <select id="statusFilter" style="max-width:160px">
+          <option value="">All Statuses</option>
+          <option value="Generated">Pending / Generated</option>
+          <option value="Paid">Paid</option>
+        </select>
+        <div class="grow"></div>
+        <button class="btn sm" id="exportExcelBtn">📊 Export Excel</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Employee</th>
+              <th>Gross Salary</th>
+              <th>Basic (50%) & HRA (25%)</th>
+              <th>Deductions (PF + Tax + LOP)</th>
+              <th>Net Take-Home</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payrollRows">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">Loading payroll records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: View Detailed Salary Structure & Calculation -->
+<div class="overlay" id="detailModal">
+  <div class="modal">
+    <div class="m-head">
+      <h3 id="modalEmpName">Salary Breakdown</h3>
+      <button class="x" id="closeDetailModal">×</button>
+    </div>
+    <div class="m-body" id="modalBody">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="m-foot" id="modalFoot">
+      <!-- Actions dynamically placed -->
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- Helper scripts -->
+<script src="/js/common.js"></script>
+<script src="/js/export-helpers.js"></script>
+<script>
+// State
+let allRecords = [];
+let currentSummary = {};
+let selectedRecord = null;
+
+const fmt = n => '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(t._ti);
+  t._ti = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+// Initial default month = current YYYY-MM
+const today = new Date();
+const yyyy = today.getFullYear();
+const mm = String(today.getMonth() + 1).padStart(2, '0');
+document.getElementById('payrollMonth').value = `${yyyy}-${mm}`;
+
+// Load Payroll Data
+async function loadPayroll() {
+  const m = document.getElementById('payrollMonth').value;
+  try {
+    const res = await fetch(`/api/payroll?month=${m}`);
+    const data = await res.json();
+    allRecords = data.records || [];
+    currentSummary = data.summary || {};
+
+    // Update KPI stats
+    document.getElementById('statGross').textContent = fmt(currentSummary.total_gross);
+    document.getElementById('statDeductions').textContent = fmt(currentSummary.total_deductions);
+    document.getElementById('statNet').textContent = fmt(currentSummary.total_net);
+    document.getElementById('statEmpCount').textContent = `${currentSummary.total_employees || 0} Employees Processed`;
+    document.getElementById('statPaidRatio').textContent = `${currentSummary.paid_count || 0} / ${currentSummary.total_employees || 0} Paid`;
+    document.getElementById('statPendingCount').textContent = `${currentSummary.generated_count || 0} Pending Disbursals`;
+
+    renderTable();
+  } catch (err) {
+    console.error(err);
+    toast('Failed to load payroll data.', 'bad');
+  }
+}
+
+// Render Table
+function renderTable() {
+  const q = document.getElementById('searchEmp').value.toLowerCase().trim();
+  const dept = document.getElementById('deptFilter').value;
+  const stat = document.getElementById('statusFilter').value;
+
+  const filtered = allRecords.filter(r => {
+    if (dept && r.department !== dept) return false;
+    if (stat && r.status !== stat) return false;
+    if (q) {
+      const match = (r.full_name || '').toLowerCase().includes(q) ||
+                    (r.emp_code || '').toLowerCase().includes(q) ||
+                    (r.department || '').toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  const tbody = document.getElementById('payrollRows');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">
+      No payroll records found for this period. Click <b>"⚡ Run Monthly Payroll"</b> above to calculate payroll.
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r, i) => {
+    const avatarHtml = r.avatar
+      ? `<img src="${r.avatar}" alt="" />`
+      : (r.full_name || 'E').slice(0, 2).toUpperCase();
+
+    const totalDed = Number(r.pf_deduction || 0) + Number(r.tax_deduction || 0) + Number(r.lop_deduction || 0);
+
+    const isPaid = r.status === 'Paid';
+    const badgeClass = isPaid ? 'badge paid' : 'badge gen';
+    const badgeText = isPaid ? '✓ Paid' : '⏳ Generated';
+
+    return `
+      <tr>
+        <td style="color:var(--muted)">${i + 1}</td>
+        <td>
+          <div class="emp-meta">
+            <div class="avatar">${avatarHtml}</div>
+            <div>
+              <div class="n">${escapeHtml(r.full_name)}</div>
+              <div class="c">${escapeHtml(r.emp_code)} • ${escapeHtml(r.department || 'General')}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="sal-gross">${fmt(r.gross_salary)}</div>
+          <span class="sal-part">30 Days Month</span>
+        </td>
+        <td>
+          <div>Basic: <b>${fmt(r.basic)}</b></div>
+          <span class="sal-part">HRA: ${fmt(r.hra)} | Allow: ${fmt(r.allowances)}</span>
+        </td>
+        <td>
+          <div style="color:var(--red);font-weight:600">-${fmt(totalDed)}</div>
+          <span class="sal-part">PF: ${fmt(r.pf_deduction)} | Tax: ${fmt(r.tax_deduction)} ${r.lop_deduction > 0 ? `| LOP: ${fmt(r.lop_deduction)}` : ''}</span>
+        </td>
+        <td>
+          <div class="sal-net">${fmt(r.net_salary)}</div>
+          <span class="sal-part">${r.paid_days} paid days</span>
+        </td>
+        <td>
+          <span class="${badgeClass}">${badgeText}</span>
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="btn sm" onclick="viewDetail(${r.id})" title="View Salary Breakdown">ℹ️ Breakdown</button>
+            <button class="btn sm primary" onclick="downloadPdf(${r.id})" title="Download Official Payslip PDF">📄 PDF</button>
+            <button class="btn sm" onclick="sendSlipEmail(${r.id})" title="Email Payslip to Employee">✉️ Email</button>
+            ${!isPaid ? `<button class="btn sm success" onclick="markPaid(${r.id})" title="Mark as Paid">✓ Pay</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]);
+}
+
+// Run Monthly Payroll
+document.getElementById('runPayrollBtn').addEventListener('click', async () => {
+  const m = document.getElementById('payrollMonth').value;
+  if (!confirm(`Run and calculate monthly payroll for active employees for ${m}? This will calculate Basic, HRA, PF, TDS, and Attendance LOP.`)) return;
+
+  try {
+    const res = await fetch('/api/payroll/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: m })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.message || 'Error processing payroll');
+    toast(d.message, 'ok');
+    loadPayroll();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+});
+
+// Mark All Paid
+document.getElementById('markAllPaidBtn').addEventListener('click', async () => {
+  const m = document.getElementById('payrollMonth').value;
+  if (!allRecords.length) return toast('No payroll records to mark paid.', 'bad');
+  if (!confirm(`Mark all payroll records as Paid for ${m}?`)) return;
+
+  try {
+    const res = await fetch('/api/payroll/mark-all-paid', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: m })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.message);
+    toast(d.message, 'ok');
+    loadPayroll();
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+});
+
+// Mark Single Record Paid
+async function markPaid(id) {
+  try {
+    const res = await fetch(`/api/payroll/${id}/pay`, { method: 'PUT' });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.message);
+    toast('Employee salary marked as Paid.', 'ok');
+    loadPayroll();
+    if (document.getElementById('detailModal').classList.contains('open')) {
+      closeModal();
+    }
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Send Payslip Email
+async function sendSlipEmail(id) {
+  toast('Sending payslip email...', 'ok');
+  try {
+    const res = await fetch(`/api/payroll/${id}/email`, { method: 'POST' });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.message);
+    toast(d.message, 'ok');
+  } catch (err) {
+    toast(err.message, 'bad');
+  }
+}
+
+// Download Single PDF Payslip
+function downloadPdf(id) {
+  const r = allRecords.find(x => x.id === id);
+  if (!r) return toast('Record not found.', 'bad');
+  if (typeof window.generatePayslipPdf === 'function') {
+    window.generatePayslipPdf(r);
+  } else {
+    toast('PDF generator is initializing, please try again.', 'bad');
+  }
+}
+
+// View Detailed Salary Breakdown Modal
+function viewDetail(id) {
+  const r = allRecords.find(x => x.id === id);
+  if (!r) return;
+  selectedRecord = r;
+
+  const totalDed = Number(r.pf_deduction || 0) + Number(r.tax_deduction || 0) + Number(r.lop_deduction || 0);
+
+  document.getElementById('modalEmpName').textContent = `${r.full_name} (${r.emp_code}) - ${r.month}`;
+
+  document.getElementById('modalBody').innerHTML = `
+    <div style="margin-bottom:16px;color:var(--muted);font-size:13px">
+      <b>Department:</b> ${escapeHtml(r.department)} | <b>Designation:</b> ${escapeHtml(r.designation)}<br/>
+      <b>Email:</b> ${escapeHtml(r.email)} | <b>Status:</b> <span class="badge ${r.status === 'Paid' ? 'paid' : 'gen'}">${r.status}</span>
+    </div>
+
+    <table class="calc-table">
+      <thead>
+        <tr>
+          <th>Earnings Component</th>
+          <th style="text-align:right">Amount</th>
+          <th>Deduction Component</th>
+          <th style="text-align:right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Basic Salary (50%)</td>
+          <td style="text-align:right">${fmt(r.basic)}</td>
+          <td>Provident Fund (PF - 12%)</td>
+          <td style="text-align:right;color:var(--red)">-${fmt(r.pf_deduction)}</td>
+        </tr>
+        <tr>
+          <td>HRA (25%)</td>
+          <td style="text-align:right">${fmt(r.hra)}</td>
+          <td>Income Tax (TDS)</td>
+          <td style="text-align:right;color:var(--red)">-${fmt(r.tax_deduction)}</td>
+        </tr>
+        <tr>
+          <td>Special Allowances</td>
+          <td style="text-align:right">${fmt(r.allowances)}</td>
+          <td>Loss of Pay (LOP)</td>
+          <td style="text-align:right;color:var(--red)">-${fmt(r.lop_deduction)}</td>
+        </tr>
+        <tr class="total-row">
+          <td>Total Gross Earnings</td>
+          <td style="text-align:right">${fmt(r.gross_salary)}</td>
+          <td>Total Deductions</td>
+          <td style="text-align:right;color:var(--red)">-${fmt(totalDed)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="takehome-box">
+      <div class="takehome-title">Net Take-Home Disbursed</div>
+      <div class="takehome-val">${fmt(r.net_salary)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Working Days: ${r.working_days} | Paid Days: ${r.paid_days}</div>
+    </div>
+  `;
+
+  document.getElementById('modalFoot').innerHTML = `
+    <button class="btn" onclick="closeModal()">Close</button>
+    <button class="btn" onclick="sendSlipEmail(${r.id})">✉️ Email Payslip</button>
+    <button class="btn primary" onclick="downloadPdf(${r.id})">📄 Download PDF</button>
+    ${r.status !== 'Paid' ? `<button class="btn success" onclick="markPaid(${r.id})">✓ Mark Paid</button>` : ''}
+  `;
+
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('open');
+}
+document.getElementById('closeDetailModal').addEventListener('click', closeModal);
+
+// Export Table to Excel
+document.getElementById('exportExcelBtn').addEventListener('click', () => {
+  if (!allRecords.length) return toast('No data to export.', 'bad');
+  const m = document.getElementById('payrollMonth').value;
+
+  if (typeof XLSX !== 'undefined') {
+    const wsData = [
+      ['EMPLOYEE DATA MANAGER - OFFICIAL MONTHLY PAYROLL REPORT'],
+      [`Month: ${m}`, `Generated on: ${new Date().toLocaleString('en-IN')}`],
+      [],
+      ['#', 'Emp Code', 'Employee Name', 'Department', 'Designation', 'Gross Salary', 'Basic', 'HRA', 'Allowances', 'PF (12%)', 'Tax (TDS)', 'LOP Deduction', 'Net Salary', 'Working Days', 'Paid Days', 'Status']
+    ];
+
+    allRecords.forEach((r, idx) => {
+      wsData.push([
+        idx + 1,
+        r.emp_code,
+        r.full_name,
+        r.department,
+        r.designation,
+        Number(r.gross_salary),
+        Number(r.basic),
+        Number(r.hra),
+        Number(r.allowances),
+        Number(r.pf_deduction),
+        Number(r.tax_deduction),
+        Number(r.lop_deduction),
+        Number(r.net_salary),
+        r.working_days,
+        r.paid_days,
+        r.status
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Payroll');
+    XLSX.writeFile(wb, `Payroll_Report_${m}.xlsx`);
+    toast('Excel payroll report downloaded.', 'ok');
+  }
+});
+
+// Event Listeners
+document.getElementById('payrollMonth').addEventListener('change', loadPayroll);
+document.getElementById('searchEmp').addEventListener('input', renderTable);
+document.getElementById('deptFilter').addEventListener('change', renderTable);
+document.getElementById('statusFilter').addEventListener('change', renderTable);
+
+// Theme Toggle
+function setTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem('theme', t); } catch (_) {} }
+try { setTheme(localStorage.getItem('theme') || 'light'); } catch (_) {}
+document.getElementById('themeBtn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+// Init
+loadPayroll();
+</script>
+</body>
+</html>
+

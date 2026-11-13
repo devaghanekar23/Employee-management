@@ -6,7 +6,7 @@ const FILE_PATH = path.join(DATA_DIR, 'employees.txt');
 
 /**
  * Employee ka data local text file me append karta hai.
- * Format (pipe separated): timestamp | emp_code | name | email | phone | department | designation | salary | joining_date | avatar
+ * Format (pipe separated): timestamp | emp_code | name | email | phone | department | designation | salary | joining_date | gender | dob | status | avatar
  */
 async function appendEmployeeToFile(emp) {
   await fs.promises.mkdir(DATA_DIR, { recursive: true });
@@ -20,6 +20,9 @@ async function appendEmployeeToFile(emp) {
     emp.designation,
     emp.salary,
     emp.joining_date,
+    emp.gender || 'Male',
+    emp.dob || '',
+    emp.status || 'Active',
     emp.avatar || ''
   ].join(' | ') + '\n';
   await fs.promises.appendFile(FILE_PATH, line, 'utf8');

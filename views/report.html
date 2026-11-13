@@ -31,9 +31,6 @@
       margin-top: 22px;
       margin-bottom: 22px;
     }
-    @media (max-width: 900px) {
-      .chart-grid { grid-template-columns: 1fr; }
-    }
     .chart-box {
       background: var(--card);
       border: 1px solid var(--border);
@@ -67,6 +64,52 @@
       background: #9f1917;
       color: #fff;
     }
+    .badge-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-active { background: #e7f7ed; color: #16a34a; }
+    .badge-resigned { background: #fde8e8; color: #dc2626; }
+    .badge-terminated { background: #fef3c7; color: #d97706; }
+
+    /* Responsive Mobile Styles */
+    @media (max-width: 860px) {
+      .navbar {
+        height: auto;
+        padding: 10px 14px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .navbar .brand { margin-bottom: 4px; }
+      .nav-links {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .nav-links a { padding: 6px 10px; font-size: 0.85rem; }
+      .container { padding: 0 14px; margin: 16px auto; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+      .stat { padding: 12px 14px; }
+      .stat .value { font-size: 1.3rem; }
+      .chart-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 14px; margin-bottom: 14px; }
+      .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+      .toolbar input, .toolbar select { width: 100% !important; max-width: none !important; }
+      .toolbar .spacer { display: none; }
+      .toolbar .btn { width: 100%; justify-content: center; }
+      .card { padding: 16px 14px; }
+    }
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat { padding: 10px; }
+      .stat .label { font-size: 0.72rem; }
+      .stat .value { font-size: 1.15rem; }
+      .page-title { font-size: 1.25rem; }
+    }
   </style>
 </head>
 <body>
@@ -76,13 +119,15 @@
       <a href="/dashboard">Dashboard</a>
       <a href="/attendance">Attendance</a>
       <a href="/leaves">Leaves</a>
+      <a href="/payroll">Payroll</a>
+      <a href="/org-chart">Org Chart</a>
       <a href="/report" class="active">Employee Report</a>
     </div>
   </nav>
 
   <main class="container">
     <h1 class="page-title">Employee Report & Analytics</h1>
-    <p class="page-sub">Comprehensive employee records, compensation statistics, and professional export options.</p>
+    <p class="page-sub">Comprehensive employee records, compensation statistics, diversity, and professional export options.</p>
 
     <div class="stats">
       <div class="stat"><div class="label">Total Employees</div><div class="value" id="sTotal">0</div></div>
@@ -95,13 +140,13 @@
     <div class="chart-grid">
       <div class="chart-box">
         <h3>📊 Average Salary by Department</h3>
-        <div style="height: 240px; position: relative;">
+        <div style="height: 230px; position: relative;">
           <canvas id="salaryDeptChart"></canvas>
         </div>
       </div>
       <div class="chart-box">
         <h3>📈 Employee Joining Trend</h3>
-        <div style="height: 240px; position: relative;">
+        <div style="height: 230px; position: relative;">
           <canvas id="joiningTrendChart"></canvas>
         </div>
       </div>
@@ -114,6 +159,13 @@
           <option value="">All Departments</option>
           <option>IT</option><option>HR</option><option>Finance</option>
           <option>Sales</option><option>Marketing</option><option>Operations</option>
+        </select>
+        <select id="statusFilter" style="max-width:160px">
+          <option value="">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Probation">Probation</option>
+          <option value="Resigned">Resigned</option>
+          <option value="Terminated">Terminated</option>
         </select>
         <div class="spacer"></div>
         <button class="btn btn-sm btn-excel" id="excelBtn">📊 Export Excel</button>
@@ -134,12 +186,14 @@
               <th>Phone</th>
               <th>Department</th>
               <th>Designation</th>
+              <th>Gender</th>
+              <th>Status</th>
               <th>Salary</th>
               <th>Joined</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="rows"><tr><td colspan="10" class="empty">Loading...</td></tr></tbody>
+          <tbody id="rows"><tr><td colspan="12" class="empty">Loading...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -278,15 +332,19 @@
     async function loadEmployees() {
       const q = encodeURIComponent(document.getElementById('search').value);
       const d = encodeURIComponent(document.getElementById('deptFilter').value);
+      const st = encodeURIComponent(document.getElementById('statusFilter').value);
       const tbody = document.getElementById('rows');
       try {
-        const { employees } = await api(`/api/employees?q=${q}&department=${d}`);
+        const { employees } = await api(`/api/employees?q=${q}&department=${d}&status=${st}`);
         current = employees;
         if (!employees.length) {
-          tbody.innerHTML = '<tr><td colspan="10" class="empty">No employees found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="12" class="empty">No employees found.</td></tr>';
           return;
         }
-        tbody.innerHTML = employees.map((e, i) => `
+        tbody.innerHTML = employees.map((e, i) => {
+          const statusVal = e.status || 'Active';
+          const badgeClass = statusVal === 'Active' ? 'badge-active' : statusVal === 'Resigned' ? 'badge-resigned' : 'badge-terminated';
+          return `
           <tr>
             <td>${i + 1}</td>
             <td><strong>${escapeHtml(e.emp_code)}</strong></td>
@@ -295,15 +353,18 @@
             <td>${escapeHtml(e.phone)}</td>
             <td><span class="badge">${escapeHtml(e.department)}</span></td>
             <td>${escapeHtml(e.designation)}</td>
+            <td>${escapeHtml(e.gender || 'Male')}</td>
+            <td><span class="badge-status ${badgeClass}">${escapeHtml(statusVal)}</span></td>
             <td>${formatMoney(e.salary)}</td>
             <td>${escapeHtml((e.joining_date || '').slice(0, 10))}</td>
             <td class="actions">
               <a class="btn btn-sm btn-outline" href="/dashboard?edit=${e.id}">Edit</a>
               <button class="btn btn-sm btn-danger" onclick="removeEmp(${e.id}, '${escapeHtml(e.full_name).replace(/'/g, '')}')">Delete</button>
             </td>
-          </tr>`).join('');
+          </tr>`;
+        }).join('');
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="10" class="empty">${escapeHtml(err.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(err.message)}</td></tr>`;
       }
     }
 
@@ -318,8 +379,8 @@
 
     function exportCsv() {
       if (!current.length) return toast('No data to export.', 'bad');
-      const head = ['Emp ID','Name','Email','Phone','Department','Designation','Salary','Joining Date'];
-      const lines = current.map(e => [e.emp_code, e.full_name, e.email, e.phone, e.department, e.designation, e.salary, (e.joining_date||'').slice(0,10)]
+      const head = ['Emp ID','Name','Email','Phone','Department','Designation','Gender','Status','Salary','Joining Date'];
+      const lines = current.map(e => [e.emp_code, e.full_name, e.email, e.phone, e.department, e.designation, e.gender||'Male', e.status||'Active', e.salary, (e.joining_date||'').slice(0,10)]
         .map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
       const blob = new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' });
       const a = document.createElement('a');
@@ -331,9 +392,9 @@
     let timer;
     document.getElementById('search').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadEmployees, 300); });
     document.getElementById('deptFilter').addEventListener('change', loadEmployees);
+    document.getElementById('statusFilter').addEventListener('change', loadEmployees);
     document.getElementById('csvBtn').addEventListener('click', exportCsv);
 
-    // Professional Excel and PDF export handlers
     document.getElementById('excelBtn').addEventListener('click', () => {
       exportToExcel(current, { filter: document.getElementById('deptFilter').value });
     });

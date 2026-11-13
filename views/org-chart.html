@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Organization Chart | Employee Data Manager</title>
+<style>
+:root{
+  --bg:#f3f4f7; --panel:#ffffff; --soft:#f6f7f9; --text:#111827; --muted:#6b7280; --line:#eceef2;
+  --primary:#1f5fd6; --primary-soft:#e8f0fe; --accent:#f58a5b; --accent-soft:#fff1ea;
+  --green:#16a34a; --green-soft:#e7f7ed; --red:#dc2626; --red-soft:#fde8e8;
+  --amber:#d97706; --amber-soft:#fef3c7; --purple:#7c3aed; --purple-soft:#f3e8ff;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --soft:#1c2330; --text:#e6edf3; --muted:#8b98a9; --line:#262e3b;
+  --primary:#4c8dff; --primary-soft:#172640; --accent:#ff9d73; --accent-soft:#3a2418;
+  --green:#3fb950; --green-soft:#12301c; --red:#f85149; --red-soft:#3b1618;
+  --amber:#f59e0b; --amber-soft:#362810; --purple:#a78bfa; --purple-soft:#2e1f4d;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:'Segoe UI',Inter,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+.app{display:grid;grid-template-columns:72px 1fr;min-height:100vh}
+
+/* Sidebar (Desktop) */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:10px;position:sticky;top:0;height:100vh;z-index:40}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:14px;flex-shrink:0}
+.nav{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--muted);border:none;background:none;position:relative;transition:.15s;flex-shrink:0}
+.nav:hover{background:var(--soft);color:var(--text)}
+.nav.active{background:var(--primary-soft);color:var(--primary)}
+.nav svg{width:22px;height:22px}
+.nav[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:54px;background:#111827;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:20}
+.spacer{flex:1}
+
+/* Main Content */
+.main{padding:28px 36px;max-width:1600px;margin:0 auto;width:100%}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:16px}
+.crumb{color:var(--muted);font-size:12.5px;margin-bottom:4px}
+.crumb b{color:var(--text);font-weight:600}
+.page-title h1{font-size:24px;font-weight:700;display:flex;align-items:center;gap:10px}
+.page-title p{color:var(--muted);font-size:13.5px;margin-top:2px}
+
+.actions-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:9px 15px;border-radius:10px;font-size:13.5px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.sm{padding:6px 12px;font-size:12.5px;border-radius:8px}
+
+input,select{padding:9px 12px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:10px;font-size:13.5px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--primary)}
+
+/* Controls Bar */
+.controls-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:24px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.controls-card .grow{flex:1}
+
+/* Org Chart Canvas */
+.chart-viewport{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:40px 20px;
+  min-height:600px;
+  overflow:auto;
+  position:relative;
+  display:flex;
+  justify-content:center;
+}
+
+/* Tree Structure CSS */
+.tree, .tree ul, .tree li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.tree {
+  display: flex;
+  justify-content: center;
+  transition: transform .2s ease;
+  transform-origin: top center;
+}
+
+.tree ul {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+.tree li {
+  float: left;
+  text-align: center;
+  padding: 24px 12px 0 12px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+/* Connectors */
+.tree li::before, .tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  border-top: 2px solid var(--line);
+  width: 50%;
+  height: 24px;
+}
+.tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid var(--line);
+}
+.tree li:only-child::after, .tree li:only-child::before {
+  display: none;
+}
+.tree li:only-child {
+  padding-top: 0;
+}
+.tree li:first-child::before, .tree li:last-child::after {
+  border: 0 none;
+}
+.tree li:last-child::before {
+  border-right: 2px solid var(--line);
+  border-radius: 0 8px 0 0;
+}
+.tree li:first-child::after {
+  border-radius: 8px 0 0 0;
+}
+
+/* Downward Connector from parent */
+.tree ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-left: 2px solid var(--line);
+  width: 0;
+  height: 24px;
+  transform: translateX(-50%);
+}
+
+/* Employee Node Card */
+.node-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  width: 220px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  position: relative;
+  z-index: 2;
+}
+
+.node-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(31,95,214,0.15);
+  border-color: var(--primary);
+}
+
+.node-card.root-card {
+  border-top: 4px solid var(--primary);
+  width: 240px;
+}
+
+.node-card.highlight {
+  border: 2px solid var(--primary);
+  background: var(--primary-soft);
+}
+
+.node-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+  font-size: 15px;
+  background: var(--primary);
+  margin-bottom: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.node-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.node-name { font-weight: 700; font-size: 14px; color: var(--text); line-height: 1.2; }
+.node-code { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.node-role { font-size: 12px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+.node-dept { font-size: 11px; color: var(--muted); }
+
+.node-badges { display: flex; align-items: center; gap: 4px; margin-top: 8px; }
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 999px; font-weight: 600; }
+.tag.green { background: var(--green-soft); color: var(--green); }
+.tag.purple { background: var(--purple-soft); color: var(--purple); }
+.tag.reports { background: var(--soft); color: var(--muted); border: 1px solid var(--line); }
+
+/* Collapse / Expand Toggle Button */
+.node-toggle {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 5;
+}
+.node-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+#toast{position:fixed;right:22px;bottom:22px;padding:12px 18px;border-radius:12px;color:#fff;font-size:13.5px;opacity:0;transform:translateY(10px);transition:.25s;z-index:200;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+#toast.ok{background:#16a34a} #toast.bad{background:#dc2626}
+
+/* Mobile Responsiveness */
+@media(max-width:860px){
+  .app{display:block;min-height:100vh}
+
+  .side{
+    flex-direction:row;
+    height:56px;
+    width:100%;
+    padding:0 14px;
+    justify-content:flex-start;
+    position:sticky;
+    top:0;
+    z-index:50;
+    border-right:none;
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+    gap:6px;
+  }
+  .logo{margin:0 8px 0 0;width:34px;height:34px;font-size:16px;border-radius:10px}
+  .nav{width:40px;height:40px;border-radius:10px}
+  .nav svg{width:20px;height:20px}
+  .nav[data-tip]:hover::after{display:none}
+
+  .main{padding:16px 14px 40px}
+  .top-bar{flex-direction:column;align-items:stretch;gap:14px;margin-bottom:18px}
+  .page-title h1{font-size:20px}
+  
+  .controls-card{flex-direction:column;align-items:stretch;gap:10px}
+  .controls-card input, .controls-card select{width:100%}
+  .controls-card .grow{display:none}
+  .controls-card .btn-group{display:flex;width:100%;gap:6px}
+  .controls-card .btn-group .btn{flex:1}
+
+  .chart-viewport{padding:24px 10px;min-height:450px}
+  .node-card{width:180px;padding:10px 12px}
+  .node-name{font-size:12.5px}
+  .node-role{font-size:11px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo">E</div>
+    <a class="nav" data-tip="Dashboard" href="/dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    </a>
+    <a class="nav" data-tip="Attendance" href="/attendance" aria-label="Attendance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+    </a>
+    <a class="nav" data-tip="Leaves" href="/leaves" aria-label="Leaves">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><circle cx="12" cy="16" r="2"/></svg>
+    </a>
+    <a class="nav" data-tip="Payroll" href="/payroll" aria-label="Payroll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </a>
+    <a class="nav active" data-tip="Org Chart" href="/org-chart" aria-label="Org Chart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M5 17v-2a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v2"/></svg>
+    </a>
+    <a class="nav" data-tip="Employee Report" href="/report" aria-label="Report">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+    </a>
+    <div class="spacer"></div>
+    <button class="nav" id="themeBtn" data-tip="Dark / Light mode" title="Toggle theme" aria-label="Theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="top-bar">
+      <div>
+        <div class="crumb">Organization &nbsp;›&nbsp; <b>Hierarchy Chart</b></div>
+        <div class="page-title">
+          <h1>Organization Hierarchy Chart</h1>
+          <p>Interactive tree structure showing reporting managers and team member relationships.</p>
+        </div>
+      </div>
+      <div class="actions-top">
+        <a class="btn primary" href="/dashboard">+ Manage Employees</a>
+      </div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-card">
+      <input id="searchNode" placeholder="Search employee in org chart..." style="min-width:240px" />
+      <select id="deptFilter">
+        <option value="">All Departments</option>
+        <option>IT</option><option>HR</option><option>Finance</option><option>Sales</option><option>Marketing</option><option>Operations</option>
+      </select>
+      <div class="grow"></div>
+      <div class="btn-group">
+        <button class="btn sm" id="zoomOutBtn" title="Zoom Out">🔍 -</button>
+        <button class="btn sm" id="zoomResetBtn" title="Reset Zoom">100%</button>
+        <button class="btn sm" id="zoomInBtn" title="Zoom In">🔍 +</button>
+      </div>
+      <button class="btn sm" id="toggleAllBtn">Expand All</button>
+    </div>
+
+    <!-- Tree Viewport -->
+    <div class="chart-viewport" id="viewport">
+      <div class="tree" id="treeRoot">
+        <div style="padding:60px;text-align:center;color:var(--muted)">Loading organization hierarchy...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let orgData = { roots: [], all: [] };
+let zoomLevel = 1.0;
+let collapsedMap = new Set();
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(t._ti);
+  t._ti = setTimeout(() => { t.className = ''; }, 3000);
+}
+
+// Load Org Chart
+async function loadOrgChart() {
+  try {
+    const res = await fetch('/api/employees/org-chart');
+    orgData = await res.json();
+    renderTree();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('treeRoot').innerHTML = `<div style="padding:60px;text-align:center;color:var(--red)">Failed to load org chart hierarchy.</div>`;
+  }
+}
+
+// Build HTML tree recursively
+function renderNode(node, isRoot = false) {
+  const hasChildren = node.children && node.children.length > 0;
+  const isCollapsed = collapsedMap.has(node.id);
+
+  const avatarContent = node.avatar
+    ? `<img src="${esc(node.avatar)}" alt="" />`
+    : (node.full_name || 'E').slice(0, 2).toUpperCase();
+
+  const statusTag = node.status === 'Probation'
+    ? `<span class="tag purple">Probation</span>`
+    : `<span class="tag green">Active</span>`;
+
+  const reportsTag = hasChildren
+    ? `<span class="tag reports">👥 ${node.children.length}</span>`
+    : '';
+
+  const toggleBtn = hasChildren
+    ? `<div class="node-toggle" onclick="toggleNode(event, ${node.id})" title="${isCollapsed ? 'Expand' : 'Collapse'}">${isCollapsed ? '+' : '−'}</div>`
+    : '';
+
+  const childrenHtml = (hasChildren && !isCollapsed)
+    ? `<ul>${node.children.map(c => renderNode(c, false)).join('')}</ul>`
+    : '';
+
+  return `
+    <li id="node_${node.id}">
+      <div class="node-card ${isRoot ? 'root-card' : ''}" onclick="goToEmployee(${node.id})">
+        <div class="node-avatar">${avatarContent}</div>
+        <div class="node-name">${esc(node.full_name)}</div>
+        <div class="node-code">${esc(node.emp_code)}</div>
+        <div class="node-role">${esc(node.designation)}</div>
+        <div class="node-dept">${esc(node.department)}</div>
+        <div class="node-badges">
+          ${statusTag}
+          ${reportsTag}
+        </div>
+        ${toggleBtn}
+      </div>
+      ${childrenHtml}
+    </li>
+  `;
+}
+
+function renderTree() {
+  const container = document.getElementById('treeRoot');
+  const dept = document.getElementById('deptFilter').value;
+
+  if (!orgData.roots || !orgData.roots.length) {
+    container.innerHTML = `
+      <div style="padding:60px;text-align:center;color:var(--muted)">
+        <p style="font-size:16px;font-weight:600">No organizational hierarchy found.</p>
+        <p style="margin-top:6px;font-size:13px">Add employees and assign their <b>Reporting Manager</b> to view the visual tree.</p>
+      </div>`;
+    return;
+  }
+
+  let rootsToDisplay = orgData.roots;
+  if (dept) {
+    rootsToDisplay = orgData.all.filter(e => e.department === dept);
+  }
+
+  container.innerHTML = `<ul>${rootsToDisplay.map(r => renderNode(r, true)).join('')}</ul>`;
+}
+
+function toggleNode(ev, id) {
+  ev.stopPropagation();
+  if (collapsedMap.has(id)) {
+    collapsedMap.delete(id);
+  } else {
+    collapsedMap.add(id);
+  }
+  renderTree();
+}
+
+function goToEmployee(id) {
+  window.location.href = `/dashboard?select=${id}`;
+}
+
+// Search
+document.getElementById('searchNode').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase().trim();
+  document.querySelectorAll('.node-card').forEach(c => c.classList.remove('highlight'));
+  if (!q) return;
+
+  const match = orgData.all.find(x =>
+    (x.full_name || '').toLowerCase().includes(q) ||
+    (x.emp_code || '').toLowerCase().includes(q) ||
+    (x.designation || '').toLowerCase().includes(q)
+  );
+
+  if (match) {
+    // Expand parents
+    collapsedMap.clear();
+    renderTree();
+    const el = document.getElementById(`node_${match.id}`);
+    if (el) {
+      const card = el.querySelector('.node-card');
+      if (card) {
+        card.classList.add('highlight');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      }
+    }
+  }
+});
+
+// Zoom Controls
+function setZoom(lvl) {
+  zoomLevel = Math.max(0.4, Math.min(2.0, lvl));
+  document.getElementById('treeRoot').style.transform = `scale(${zoomLevel})`;
+  document.getElementById('zoomResetBtn').textContent = `${Math.round(zoomLevel * 100)}%`;
+}
+
+document.getElementById('zoomInBtn').addEventListener('click', () => setZoom(zoomLevel + 0.15));
+document.getElementById('zoomOutBtn').addEventListener('click', () => setZoom(zoomLevel - 0.15));
+document.getElementById('zoomResetBtn').addEventListener('click', () => setZoom(1.0));
+
+// Expand / Collapse All
+let allCollapsed = false;
+document.getElementById('toggleAllBtn').addEventListener('click', () => {
+  if (allCollapsed) {
+    collapsedMap.clear();
+    document.getElementById('toggleAllBtn').textContent = 'Collapse All';
+    allCollapsed = false;
+  } else {
+    orgData.all.forEach(e => collapsedMap.add(e.id));
+    document.getElementById('toggleAllBtn').textContent = 'Expand All';
+    allCollapsed = true;
+  }
+  renderTree();
+});
+
+document.getElementById('deptFilter').addEventListener('change', renderTree);
+
+// Theme Toggle
+function setTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem('theme', t); } catch (_) {} }
+try { setTheme(localStorage.getItem('theme') || 'light'); } catch (_) {}
+document.getElementById('themeBtn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+// Init
+loadOrgChart();
+</script>
+</body>
+</html>
+

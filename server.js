@@ -6,6 +6,7 @@ const { initDatabase } = require('./config/db');
 const employeeRoutes = require('./routes/employees');
 const attendanceRoutes = require('./routes/attendance');
 const leaveRoutes = require('./routes/leaves');
+const payrollRoutes = require('./routes/payroll');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,12 +22,15 @@ app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/payroll', payrollRoutes);
 
 // Pages
 app.get('/', (req, res) => res.redirect('/dashboard'));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard.html')));
 app.get('/attendance', (req, res) => res.sendFile(path.join(__dirname, 'views', 'attendance.html')));
 app.get('/leaves', (req, res) => res.sendFile(path.join(__dirname, 'views', 'leaves.html')));
+app.get('/payroll', (req, res) => res.sendFile(path.join(__dirname, 'views', 'payroll.html')));
+app.get('/org-chart', (req, res) => res.sendFile(path.join(__dirname, 'views', 'org-chart.html')));
 app.get('/report', (req, res) => res.sendFile(path.join(__dirname, 'views', 'report.html')));
 
 app.use((req, res) => res.status(404).send('404 - Page not found'));
