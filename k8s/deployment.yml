@@ -29,7 +29,7 @@ spec:
               mountPath: /vol
       containers:
         - name: employee-app
-          image: employee-manager:v1        # Docker Hub use karna ho to: <username>/employee-manager:v1
+          image: employee-management-app:latest
           imagePullPolicy: IfNotPresent     # minikube local image ke liye
           ports:
             - containerPort: 3000
