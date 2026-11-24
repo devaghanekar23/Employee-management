@@ -22,7 +22,7 @@ async function getEffectiveEmployeeId(req) {
             "UPDATE employees SET email = 'ankur@company.com', full_name = 'Ankur Mohite' WHERE id = 1 AND LOWER(email) = ?",
             [userEmail]
           );
-        } catch (_) {}
+        } catch (_) { }
       }
 
       // Check if user has their own dedicated employee record (id != 1)
@@ -37,7 +37,7 @@ async function getEffectiveEmployeeId(req) {
           try {
             await pool.query('UPDATE users SET employee_id = ? WHERE id = ?', [empId, req.user.id]);
             req.user.employee_id = empId;
-          } catch (_) {}
+          } catch (_) { }
         }
         return empId;
       }
@@ -54,7 +54,7 @@ async function getEffectiveEmployeeId(req) {
         try {
           await pool.query('UPDATE users SET employee_id = ? WHERE id = ?', [empId, req.user.id]);
           req.user.employee_id = empId;
-        } catch (_) {}
+        } catch (_) { }
         return empId;
       }
     }
@@ -397,7 +397,7 @@ router.post('/check-out', async (req, res) => {
         const diffMs = Math.max(0, now - checkInDate);
         hoursWorked = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2));
       }
-    } catch (_) {}
+    } catch (_) { }
 
     await pool.query(
       'UPDATE attendance SET check_out_time = ?, work_hours = ? WHERE id = ?',
@@ -627,5 +627,6 @@ router.put('/notifications/read-all', async (req, res) => {
   }
 });
 
+router.processAvatar = processAvatar;
 module.exports = router;
 
